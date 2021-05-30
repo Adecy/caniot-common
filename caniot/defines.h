@@ -69,15 +69,18 @@ typedef union
 
 #define DEVICE_ID_MODE  CAN_STDID
 
-#define DEVICE_RXM0     
-#define DEVICE_RXF0
-#define DEVICE_RXF1
+#define DEVICE_RXM0     0b11111100100
+// #define DEVICE_RXF0     0x300
+// #define DEVICE_RXF1     0x300
+// #define DEVICE_RXF0     0 | (0b111111 << 5)
+#define DEVICE_RXF0     0 | (__DEVICE_TYPE__ << 8) | (__DEVICE_ID__ << 5)
+#define DEVICE_RXF1     DEVICE_RXF0
 
-#define DEVICE_RXM1
-#define DEVICE_RXF2
-#define DEVICE_RXF3
-#define DEVICE_RXF4
-#define DEVICE_RXF5
+#define DEVICE_RXM1     DEVICE_RXM0
+#define DEVICE_RXF2     0 | 0b111111 << 5
+#define DEVICE_RXF3     DEVICE_RXF2
+#define DEVICE_RXF4     DEVICE_RXF3
+#define DEVICE_RXF5     DEVICE_RXF4
 
 /*___________________________________________________________________________*/
 

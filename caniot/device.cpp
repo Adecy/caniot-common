@@ -18,7 +18,7 @@ ISR(INT0_vect)
 
 void can_device::initialize(void)
 {
-    while (CAN_OK != can.begin(m_speedset, m_clockset))
+    while (CAN_OK != p_can->begin(m_speedset, m_clockset))
     {
         _delay_ms(1000);
 
@@ -26,6 +26,16 @@ void can_device::initialize(void)
     };
 
     m_error = CANIOT_ERR_OK;
+
+    p_can->init_Mask(0, CAN_STDID, DEVICE_RXM0);
+    p_can->init_Filt(0, CAN_STDID, DEVICE_RXF0);
+    p_can->init_Filt(1, CAN_STDID, DEVICE_RXF1);
+
+    p_can->init_Mask(1, CAN_STDID, DEVICE_RXM1);
+    p_can->init_Filt(2, CAN_STDID, DEVICE_RXF2);
+    p_can->init_Filt(3, CAN_STDID, DEVICE_RXF3);
+    p_can->init_Filt(4, CAN_STDID, DEVICE_RXF4);
+    p_can->init_Filt(5, CAN_STDID, DEVICE_RXF5);
 
     // interrupt when receiving a can message
     // falling on INT0
@@ -39,6 +49,11 @@ void can_device::process_message(void)
     if (CAN_MSGAVAIL == p_can->checkReceive())
     {
         p_can->readMsgBufID(&id.value, &len, buffer);
+
+        usart_print("id : ");
+        usart_hex16(id.value);
+
+        usart_print(" : ");
 
         // print_can(id.value, buffer, len);
 
@@ -76,3 +91,5 @@ void can_device::print_identification(void)
     usart_u16(version);
     usart_transmit('\n');
 }
+
+/*___________________________________________________________________________*/

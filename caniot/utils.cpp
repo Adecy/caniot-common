@@ -63,10 +63,6 @@ void print_prog_string(PGM_P const pgm_string_array, const uint8_t elem)
     }
 }
 
-
-
-/*___________________________________________________________________________*/
-
 static const char msg_can_recv_from[] PROGMEM = "CAN message received from ";
 static const char msg_can_send_between[] PROGMEM = " CAN message send between ";
 
@@ -120,6 +116,37 @@ void print_can_expl(can_id_t id, const uint8_t * const buffer, const uint8_t len
         usart_transmit(' ');
     }
     
+    usart_transmit('\n');
+}
+
+/*___________________________________________________________________________*/
+
+void debug_masks_filters(void)
+{
+    // setup masks
+    usart_print("DEVICE_RXM0 ");
+    usart_hex16(DEVICE_RXM0);
+    usart_transmit('\n');
+    usart_print("DEVICE_RXF0 ");
+    usart_hex16(DEVICE_RXF0);
+    usart_transmit('\n');
+    usart_print("DEVICE_RXF1 ");
+    usart_hex16(DEVICE_RXF1);
+    usart_transmit('\n');
+    usart_print("DEVICE_RXM1 ");
+    usart_hex16(DEVICE_RXM1);
+    usart_transmit('\n');
+    usart_print("DEVICE_RXF2 ");
+    usart_hex16(DEVICE_RXF2);
+    usart_transmit('\n');
+    usart_print("DEVICE_RXF3 ");
+    usart_hex16(DEVICE_RXF3);
+    usart_transmit('\n');
+    usart_print("DEVICE_RXF4 ");
+    usart_hex16(DEVICE_RXF4);
+    usart_transmit('\n');
+    usart_print("DEVICE_RXF5 ");
+    usart_hex16(DEVICE_RXF5);
     usart_transmit('\n');
 }
 
