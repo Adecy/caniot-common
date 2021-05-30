@@ -36,7 +36,7 @@ void usart_transmit(char data)
 
 void usart_send(const char* buffer, size_t len)
 {
-  for(uint_fast8_t i = 0; i < len; i++)
+  for(uint_fast16_t i = 0; i < len; i++)
   {
     usart_transmit(buffer[i]);
   }
@@ -66,7 +66,7 @@ void  usart_u16(uint16_t val)
 
   uint8_t first_digit = 4u;
 
-  for (uint_fast8_t p = 0; p < 5; p++)
+  for (uint_fast16_t p = 0; p < 5; p++)
   {
     char cur = _usart_alpha16[val % 10];
 
@@ -145,5 +145,24 @@ void usart_print(const char * text)
 void usart_printl(const char * text)
 {
   usart_print(text);
+  usart_transmit('\n');
+}
+
+void usart_send_p(const char* buffer, size_t len)
+{
+  for(uint_fast16_t i = 0; i < len; i++)
+  {
+    usart_transmit(pgm_read_byte(&buffer[i]));
+  }
+}
+
+void usart_print_p(const char * text)
+{
+  usart_send_p(text, strlen_P(text));
+}
+
+void usart_printl_p(const char * text)
+{
+  usart_print_p(text);
   usart_transmit('\n');
 }

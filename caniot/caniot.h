@@ -1,17 +1,16 @@
-#include <stdint.h>
-
-#include <mcp_can.h>
-
 #ifndef _CANIOT_H
 #define _CANIOT_H
 
-class can_device
-{
-public:
+#include <avr/pgmspace.h>
+#include <avr/io.h>
+#include <avr/interrupt.h>
 
-    uint32_t m_id = 0;
+#include <stdint.h>
+#include <stddef.h>
 
-    can_device(void);
-};
+#include <SPI.h>
+#include <mcp2515_can.h>
+
+#include "defines.h"
 
 #endif
