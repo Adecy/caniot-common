@@ -15,13 +15,13 @@ extern mcp2515_can can;
 
 class can_device
 {
-protected:
-    typedef struct
+public:
+    typedef struct // 36 B
     {
-        const char name[32] PROGMEM;
-        const uint8_t id PROGMEM;
-        const uint8_t type PROGMEM;
-        const uint16_t version PROGMEM;
+        uint8_t id;
+        uint8_t type;
+        uint16_t version;
+        char name[32];
 
     } identification_t;
 
@@ -39,8 +39,9 @@ protected:
 
 /*___________________________________________________________________________*/
 
-public:
-    static const identification_t identification;
+
+    static identification_t identification;
+    
     system_t system = {0};
     telemetry_config_t telemetry = {0};
 
@@ -64,12 +65,15 @@ public:
 
 /*___________________________________________________________________________*/
 
-    can_device() { }
+    can_device() { };
 
     can_device(mcp2515_can * p_can, uint8_t ext_int_pin, uint32_t speedset, uint8_t clockset) : 
     p_can(p_can), m_ext_int_pin(ext_int_pin), m_speedset(speedset), m_clockset(clockset), flag_can(0)
     {
         p_instance = this;
+
+        // todo load identification in .initX section
+        memcpy_P(&identification, (const void*)__DEVICE_IDENTIFICATION_ADDR__, sizeof(identification_t));
     }
 
     static can_device* get_instance(void)
@@ -80,7 +84,7 @@ public:
     uint8_t get_error() const { return m_error; }
 
     void initialize(void);
-    void process_message(void);
+    void process_messages(void);
 
     void print_identification(void);
 };

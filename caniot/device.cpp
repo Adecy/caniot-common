@@ -2,12 +2,7 @@
 
 can_device *can_device::p_instance;
 
-const can_device::identification_t can_device::identification PROGMEM = {
-    __DEVICE_NAME__,
-    __DEVICE_ID__,
-    __DEVICE_TYPE__,
-    __FIRMWARE_VERSION__
-};
+extern can_device::identification_t can_device::identification;
 
 /*___________________________________________________________________________*/
 
@@ -44,9 +39,9 @@ void can_device::initialize(void)
     EIMSK |= 1 << INTF0;
 }
 
-void can_device::process_message(void)
+void can_device::process_messages(void)
 {
-    if (CAN_MSGAVAIL == p_can->checkReceive())
+    while (CAN_MSGAVAIL == p_can->checkReceive())
     {
         p_can->readMsgBufID(&id.value, &len, buffer);
 
@@ -68,27 +63,19 @@ void can_device::process_message(void)
 
 void can_device::print_identification(void)
 {
-    uint8_t id;
-    uint8_t type;
-    uint16_t version;
-
-    memcpy_P(&id, &identification.id, 1);
-    memcpy_P(&type, &identification.type, 1);
-    memcpy_P(&version, &identification.version, 2);
-
     usart_print("name    = ");
-    usart_printl_p(identification.name);
+    usart_printl(identification.name);
 
     usart_print("id      = ");
-    usart_hex(id);
+    usart_hex(identification.id);
     usart_transmit('\n');
 
     usart_print("type    = ");
-    usart_hex(type);
+    usart_hex(identification.type);
     usart_transmit('\n');
 
     usart_print("version = ");
-    usart_u16(version);
+    usart_u16(identification.version);
     usart_transmit('\n');
 }
 
