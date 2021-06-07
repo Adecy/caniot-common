@@ -12,13 +12,35 @@
 #define FRAME_WRITE_ATTRIBUTE   0b10
 #define FRAME_READ_ATTRIBUTE    0b11
 
+typedef enum : uint8_t
+{
+    command = 0b00,
+    telemetry = 0b01,
+    write_attribute = 0b10,
+    read_attribute = 0b11,
+} type_t;
+
 #define FRAME_QUERY             0b1
 #define FRAME_RESPONSE          0b0
+
+typedef enum : uint8_t
+{
+    query = 0b00,
+    response = 0b01,
+} query_t;
 
 #define CONTROLLER_MAIN         0b00
 #define CONTROLLER_1            0b01
 #define CONTROLLER_2            0b10
 #define CONTROLLER_BROADCAST    0b11
+
+typedef enum : uint8_t
+{
+    main_controller = 0b00,
+    controller1 = 0b01,
+    controller2 = 0b10,
+    broadcast = 0b11
+} controller_t;
 
 #define DATA_TYPE_U             0
 #define DATA_TYPE_CR            1
@@ -29,25 +51,40 @@
 #define DATA_TYPE_TTTT          6
 #define DATA_TYPE_UNDEFINED     7
 
+typedef enum : uint8_t
+{
+    U = 0,
+    CR = 1,
+    CRA = 2,
+    CRT = 3,
+    CRTTA = 4,
+    CRTAAA = 5,
+    TTTT = 6,
+    UNDEFINED = 7,
+} data_type_t;
+
 #define DEVICE_RESERVED         0
 #define DEVICE_BROADCAST        0b111111
 
 /*___________________________________________________________________________*/
 
-#define FIELD_TYPE_POS          0
-#define FIELD_TYPE_LEN          2
+#define FIELD_TYPE_POS              0
+#define FIELD_TYPE_LEN              2
 
-#define FIELD_QUERY_POS         FIELD_TYPE_POS + FIELD_TYPE_LEN
-#define FIELD_QUERY_LEN         1
+#define FIELD_QUERY_POS             FIELD_TYPE_POS + FIELD_TYPE_LEN
+#define FIELD_QUERY_LEN             1
 
-#define FIELD_CONTROLLER_POS    FIELD_QUERY_POS + FIELD_QUERY_LEN
-#define FIELD_CONTROLLER_LEN    2
+#define FIELD_CONTROLLER_POS        FIELD_QUERY_POS + FIELD_QUERY_LEN
+#define FIELD_CONTROLLER_LEN        2
 
-#define FIELD_ID_POS            FIELD_CONTROLLER_POS + FIELD_CONTROLLER_LEN
-#define FIELD_ID_LEN            6
+#define FIELD_DEVICE_TYPE_POS       FIELD_CONTROLLER_POS + FIELD_CONTROLLER_LEN
+#define FIELD_DEVICE_TYPE_LEN       3
 
-#define FIELD_UNUSED_POS        FIELD_ID_POS + FIELD_ID_LEN
-#define FIELD_UNUSED_LEN        5
+#define FIELD_DEVICE_ID_POS         FIELD_DEVICE_TYPE_POS + FIELD_DEVICE_TYPE_LEN
+#define FIELD_DEVICE_ID_LEN         3
+
+#define FIELD_UNUSED_POS            FIELD_DEVICE_ID_POS + FIELD_DEVICE_ID_LEN
+#define FIELD_UNUSED_LEN            5
 
 #pragma pack(1)
 typedef union
@@ -57,11 +94,19 @@ typedef union
         uint8_t type : FIELD_TYPE_LEN;
         uint8_t query : FIELD_QUERY_LEN;
         uint8_t controller : FIELD_CONTROLLER_LEN;
-        uint8_t id : FIELD_ID_LEN;
-        uint8_t unused : FIELD_UNUSED_LEN;
+        uint8_t device_type : FIELD_DEVICE_TYPE_LEN;
+        uint8_t device_id : FIELD_DEVICE_ID_LEN;
+        uint8_t : FIELD_UNUSED_LEN;
+        uint16_t : 16;
+
     } bitfields;
     uint8_t array[2];
     unsigned long value;
+
+    bool is_broadcast(void) const
+    {
+        return (bitfields.device_type << 3 | bitfields.device_id) == DEVICE_BROADCAST;
+    }
 } can_id_t;
 #pragma pack(1)
 
@@ -87,6 +132,10 @@ typedef union
 #define CANIOT_ERR_OK               0
 #define CANIOT_ERR_DRIVER           1
 #define CANIOT_ERR_NOT_INITIALIZED  2
+
+/*___________________________________________________________________________*/
+
+
 
 /*___________________________________________________________________________*/
 

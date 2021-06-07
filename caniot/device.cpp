@@ -1,5 +1,7 @@
 #include "device.h"
 
+#include <errno.h>
+
 can_device *can_device::p_instance;
 
 extern can_device::identification_t can_device::identification;
@@ -39,24 +41,69 @@ void can_device::initialize(void)
     EIMSK |= 1 << INTF0;
 }
 
-void can_device::process_messages(void)
+
+
+void can_device::process(void)
 {
     while (CAN_MSGAVAIL == p_can->checkReceive())
     {
-        p_can->readMsgBufID(&id.value, &len, buffer);
+        p_can->readMsgBufID(&request.id.value, &request.len, request.buffer);
 
-        usart_print("id : ");
-        usart_hex16(id.value);
+        print_can_expl(request.id, request.buffer, request.len);
 
-        usart_print(" : ");
-
-        // print_can(id.value, buffer, len);
-
-        print_can_expl(id, buffer, len);
-
-        // loopback
-        p_can->sendMsgBuf(id.value, CAN_STDID, len, buffer);
+        int ret = dispatch_request(request, response);
+        if (ret == 0)
+        {
+            p_can->sendMsgBuf(response.id.value, CAN_STDID, response.len, response.buffer);
+        }
     }
+}
+
+int can_device::dispatch_request(Message &request, Message &response)
+{
+    int ret;
+
+    if (request.is_query())
+    {
+        switch (request.get_type())
+        {
+            case type_t::command:
+                // todo
+                break;
+
+            case type_t::read_attribute:
+                ret = handle_read_attribute(*(uint16_t*) request.buffer, response);
+                break;
+
+            case type_t::write_attribute:
+                ret = handle_write_attribute(*(uint16_t*) request.buffer, *(uint32_t*) &request.buffer[2], response);
+                break;
+
+            case type_t::telemetry:
+            default:
+                return -1;  // error unprocessable request type
+        }
+
+        return ret;
+    }
+    else
+    {
+        // entity not processable
+        return -1;
+    }
+
+    return 0;
+}
+
+int can_device::handle_read_attribute(uint16_t key, Message &response)
+{
+    
+    return 0;
+}
+
+int can_device::handle_write_attribute(uint16_t key, uint32_t value, Message &response)
+{
+    return 0;
 }
 
 /*___________________________________________________________________________*/
@@ -67,11 +114,11 @@ void can_device::print_identification(void)
     usart_printl(identification.name);
 
     usart_print("id      = ");
-    usart_hex(identification.id);
+    usart_hex(identification.device.id);
     usart_transmit('\n');
 
     usart_print("type    = ");
-    usart_hex(identification.type);
+    usart_hex(identification.device.type);
     usart_transmit('\n');
 
     usart_print("version = ");

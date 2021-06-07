@@ -85,6 +85,10 @@ void print_can(const unsigned long id, const uint8_t * const buffer, const uint8
 
 void print_can_expl(can_id_t id, const uint8_t * const buffer, const uint8_t len)
 {
+    usart_transmit('[');
+    usart_hex16(id.value);
+    usart_print("] ");
+
     print_prog_string(caniot_msg_query_resp, id.bitfields.query);
 
     usart_transmit(' ');
@@ -95,18 +99,19 @@ void print_can_expl(can_id_t id, const uint8_t * const buffer, const uint8_t len
 
     print_prog_string(caniot_msg_controllers, id.bitfields.controller);
 
-    if (id.bitfields.id == DEVICE_BROADCAST)
+    if (id.is_broadcast())
     {
         usart_print(" and BROADCAST : ");
     }
     else
     {
         usart_print(" to device D");
-        usart_u8(id.bitfields.id);
-        usart_print(" : ");
-        print_prog_string(caniot_msg_data_frame_types, id.bitfields.id >> 3);
+        usart_u8(id.bitfields.device_id);
+        usart_print("  : ");
+        
+        print_prog_string(caniot_msg_data_frame_types, id.bitfields.device_type);
         usart_transmit(' ');
-        usart_u8(id.bitfields.id & 0x7);
+        usart_u8(id.bitfields.device_type);
         usart_transmit(' ');
     }
 
