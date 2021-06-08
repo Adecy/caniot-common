@@ -60,7 +60,7 @@ void usart_u8(const uint8_t val)
   usart_transmit(unit);
 }
 
-void  usart_u16(uint16_t val)
+void usart_u16(uint16_t val)
 {
   char digits[5];
 

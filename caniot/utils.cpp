@@ -1,5 +1,7 @@
 #include "utils.h"
 
+#include "message.h"
+
 /*___________________________________________________________________________*/
 
 static const char caniot_msg_types[] PROGMEM = {
@@ -83,6 +85,11 @@ void print_can(const unsigned long id, const uint8_t * const buffer, const uint8
     usart_transmit('\n');
 }
 
+void print_can_expl(Message &can_msg)
+{
+    print_can_expl(can_msg.id, can_msg.buffer, can_msg.len);
+}
+
 void print_can_expl(can_id_t id, const uint8_t * const buffer, const uint8_t len)
 {
     usart_transmit('[');
@@ -122,6 +129,13 @@ void print_can_expl(can_id_t id, const uint8_t * const buffer, const uint8_t len
     }
     
     usart_transmit('\n');
+}
+
+void print_time_sec(uint32_t time_sec)
+{
+    usart_print("uptime : ");
+    usart_u16(time_sec);
+    usart_printl(" seconds");
 }
 
 /*___________________________________________________________________________*/

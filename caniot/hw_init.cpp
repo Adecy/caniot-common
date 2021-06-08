@@ -37,8 +37,8 @@ void hw_init(void)
 #endif
 
     // set timer 2 prescale factor to 64
-    sbi(TCCR2B, CS22);
-    sbi(TCCR2A, WGM20);
+    // sbi(TCCR2B, CS22);
+    // sbi(TCCR2A, WGM20);
 
     // set a2d prescaler so we are inside the desired 50-200 KHz range.
 #if ARDUINO_ENABLE_ANALOG
@@ -51,5 +51,5 @@ void hw_init(void)
     // the bootloader connects pins 0 and 1 to the USART; disconnect them
 	// here so they can be used as normal digital i/o; they will be
 	// reconnected in Serial.begin()
-	UCSR0B = 0;
+	// UCSR0B = 0;
 }

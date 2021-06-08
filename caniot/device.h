@@ -9,6 +9,12 @@
 
 #include "message.h"
 
+#include "timer2.h"
+
+/*___________________________________________________________________________*/
+
+#define LOOPBACK_IF_ERR 1
+
 /*___________________________________________________________________________*/
 
 extern mcp2515_can can;
@@ -38,6 +44,7 @@ public:
     {
         uint32_t uptime;
         uint32_t abstime;
+        uint32_t uptime_shift;
         uint32_t message_sent;
         uint32_t message_received;
         uint8_t battery;
@@ -55,15 +62,25 @@ public:
             uint16_t time;
             uint8_t state;
         } schedules[5];
-    } schedule_t;  
+    } schedule_t;
+
+    struct attributes
+    {
+        identification_t identification;
+        system_t system;
+        telemetry_config_t period;
+        schedule_t schedules;
+    };
     
 
 /*___________________________________________________________________________*/
 
-    static identification_t identification;
-    
-    system_t system = {0};
-    telemetry_config_t telemetry = {0};
+    static struct attributes attributes;
+
+    identification_t *p_identification = &attributes.identification;
+    system_t *p_system = &attributes.system;
+    telemetry_config_t *p_period = &attributes.period;
+    schedule_t *p_schedules = &attributes.schedules;
 
 /*___________________________________________________________________________*/
 
@@ -73,7 +90,7 @@ public:
     uint32_t m_speedset;
     uint8_t m_clockset;
 
-    uint8_t m_error = CANIOT_ERR_NOT_INITIALIZED;
+    uint8_t m_error = CANIOT_ENOINIT;
 
     volatile uint8_t flag_can;
 
@@ -96,7 +113,7 @@ public:
         p_instance = this;
 
         // todo load identification in .initX section
-        memcpy_P(&identification, (const void*)__DEVICE_IDENTIFICATION_ADDR__, sizeof(identification_t));
+        memcpy_P(p_identification, (const void*)__DEVICE_IDENTIFICATION_ADDR__, sizeof(identification_t));
     }
 
     static can_device* get_instance(void)
@@ -104,16 +121,29 @@ public:
         return p_instance;
     }
 
+    uint32_t uptime(void) const
+    {
+        return p_system->uptime;
+    }
+
+    uint32_t abstime(void) const
+    {
+        return p_system->abstime + uptime() - p_system->uptime_shift;
+    }
+
     uint8_t get_error() const { return m_error; }
 
     void initialize(void);
     void process(void);
 
-    int dispatch_request(Message &request, Message &response);
+    uint8_t dispatch_request(Message &request, Message &response);
+    void prepare_error(Message &request, const uint8_t errno);
 
-    int handle_read_attribute(uint16_t key, Message &response);
-    int handle_write_attribute(uint16_t key, uint32_t value, Message &response);
-    int handle_command(Message &response);
+    uint8_t handle_command(const data_type_t data_type, Message &response);
+    uint8_t read_attribute(const uint16_t key, Message &response);
+    uint8_t write_attribute(const uint16_t key, const uint32_t value, Message &response);
+
+    uint8_t send_response(Message &response);
 
     void print_identification(void);
 };

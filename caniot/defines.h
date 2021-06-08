@@ -94,19 +94,19 @@ typedef union
         uint8_t type : FIELD_TYPE_LEN;
         uint8_t query : FIELD_QUERY_LEN;
         uint8_t controller : FIELD_CONTROLLER_LEN;
-        uint8_t device_type : FIELD_DEVICE_TYPE_LEN;
-        uint8_t device_id : FIELD_DEVICE_ID_LEN;
+        uint8_t device_id : FIELD_DEVICE_ID_LEN;        // TODO FIX THIS, SWITCH ?
+        uint8_t device_type : FIELD_DEVICE_TYPE_LEN;    // TODO FIX THIS, SWITCH ?
         uint8_t : FIELD_UNUSED_LEN;
         uint16_t : 16;
-
     } bitfields;
-    uint8_t array[2];
+    uint8_t array[2][2];
     unsigned long value;
-
+    
     bool is_broadcast(void) const
     {
         return (bitfields.device_type << 3 | bitfields.device_id) == DEVICE_BROADCAST;
     }
+
 } can_id_t;
 #pragma pack(1)
 
@@ -129,13 +129,20 @@ typedef union
 
 /*___________________________________________________________________________*/
 
-#define CANIOT_ERR_OK               0
-#define CANIOT_ERR_DRIVER           1
-#define CANIOT_ERR_NOT_INITIALIZED  2
+#define CANIOT_OK          0x00         // OK
+#define CANIOT_ENPROC      0x01         // ERROR UNPROCESSABLE
+#define CANIOT_ECMD        0x02         // ERROR COMMAND
+#define CANIOT_EKEY        0x03         // ERROR KEY (read/write-attribute)
+#define CANIOT_ETIMEOUT    0x04         // ERROR TIMEOUT
+#define CANIOT_EBUSY       0x05         // ERROR BUSY
+#define CANIOT_EFMT        0x06         // ERROR FORMAT
 
-/*___________________________________________________________________________*/
+#define CANIOT_ENOINIT     0x10         // ERROR NOT INITIALIZED
+#define CANIOT_EDRIVER     0x11         // ERROR DRIVER
 
+#define CANIOT_ENIMPL      0x0F         // ERROR NOT IMPLEMENTED
 
+#define CANIOT_ERROR     0xFF           // ANY ERROR
 
 /*___________________________________________________________________________*/
 

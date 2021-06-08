@@ -19,17 +19,30 @@ public:
 
     bool is_query(void)
     {
-        return id.bitfields.query == 0x1;
+        return id.bitfields.query == query_t::query;
     }
 
-    bool is_broadcast(void)
+    inline bool is_broadcast(void) const
     {
-        return (id.bitfields.device_type << 3 | id.bitfields.device_id) == DEVICE_BROADCAST;
+        return id.is_broadcast();
     }
 
-    type_t get_type(void)
+    type_t get_type(void) const 
     {
-        return (type_t) id.bitfields.device_type;
+        return (type_t) id.bitfields.type;
+    }
+
+    data_type_t get_data_type(void) const
+    {
+        return (data_type_t) id.bitfields.device_type;
+    }
+
+    void set_errno(uint8_t errno)
+    {
+        len = 1u;
+        buffer[0] = errno;
+        id.bitfields.query = 0;
+        id.bitfields.type = 0;
     }
 };
 
