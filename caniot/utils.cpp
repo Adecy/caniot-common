@@ -65,6 +65,26 @@ void print_prog_string(PGM_P const pgm_string_array, const uint8_t elem)
     }
 }
 
+void print_prog_type(const type_t type)
+{
+    print_prog_string(caniot_msg_types, (uint8_t) type);
+}
+
+void print_prog_query(const query_t qr)
+{
+    print_prog_string(caniot_msg_query_resp, (uint8_t) qr);
+}
+
+void print_prog_data_type(const data_type_t dt)
+{
+    print_prog_string(caniot_msg_data_frame_types, (uint8_t) dt);
+}
+
+void print_prog_controller(const controller_t ctrl)
+{
+    print_prog_string(caniot_msg_controllers, (uint8_t) ctrl);
+}
+
 static const char msg_can_recv_from[] PROGMEM = "CAN message received from ";
 static const char msg_can_send_between[] PROGMEM = " CAN message send between ";
 
@@ -96,15 +116,15 @@ void print_can_expl(can_id_t id, const uint8_t * const buffer, const uint8_t len
     usart_hex16(id.value);
     usart_print("] ");
 
-    print_prog_string(caniot_msg_query_resp, id.bitfields.query);
+    print_prog_query((query_t) id.bitfields.query);
 
     usart_transmit(' ');
 
-    print_prog_string(caniot_msg_types, id.bitfields.type);
+    print_prog_type((type_t) id.bitfields.type);
 
     usart_print_p(msg_can_send_between);
 
-    print_prog_string(caniot_msg_controllers, id.bitfields.controller);
+    print_prog_controller((controller_t) id.bitfields.controller);
 
     if (id.is_broadcast())
     {
@@ -114,12 +134,9 @@ void print_can_expl(can_id_t id, const uint8_t * const buffer, const uint8_t len
     {
         usart_print(" to device D");
         usart_u8(id.bitfields.device_id);
-        usart_print("  : ");
-        
-        print_prog_string(caniot_msg_data_frame_types, id.bitfields.device_type);
         usart_transmit(' ');
-        usart_u8(id.bitfields.device_type);
-        usart_transmit(' ');
+        print_prog_data_type((data_type_t) id.bitfields.device_type);
+        usart_transmit(' : ');
     }
 
     for (uint_fast8_t i = 0; i < len; i++)

@@ -1,7 +1,6 @@
 #include "hw_init.h"
 
 // @see "init" function from arduino in "wiring.c"
-
 void hw_init(void)
 {
 	// this needs to be called before setup() or some functions won't

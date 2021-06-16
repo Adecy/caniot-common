@@ -16,6 +16,10 @@ void print_can(const unsigned long id, const uint8_t * const buffer, const uint8
 
 void print_prog_string(PGM_P const pgm_string_array, const uint8_t elem);
 
+void print_prog_query(const query_t qr);
+void print_prog_data_type(const data_type_t dt);
+void print_prog_controller(const controller_t ctrl);
+
 void print_can_expl(Message &can_msg);
 
 void print_can_expl(can_id_t id, const uint8_t * const buffer, const uint8_t len);

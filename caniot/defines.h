@@ -94,8 +94,8 @@ typedef union
         uint8_t type : FIELD_TYPE_LEN;
         uint8_t query : FIELD_QUERY_LEN;
         uint8_t controller : FIELD_CONTROLLER_LEN;
-        uint8_t device_id : FIELD_DEVICE_ID_LEN;        // TODO FIX THIS, SWITCH ?
-        uint8_t device_type : FIELD_DEVICE_TYPE_LEN;    // TODO FIX THIS, SWITCH ?
+        uint8_t device_type : FIELD_DEVICE_TYPE_LEN;
+        uint8_t device_id : FIELD_DEVICE_ID_LEN;
         uint8_t : FIELD_UNUSED_LEN;
         uint16_t : 16;
     } bitfields;
@@ -109,6 +109,10 @@ typedef union
 
 } can_id_t;
 #pragma pack(1)
+
+/*___________________________________________________________________________*/
+
+#define BUILD_ID(type, qr, controller, devicetype, deviceid) (type | qr << 2 | controller << 3 | devicetype << 5 | deviceid << 8)
 
 /*___________________________________________________________________________*/
 
@@ -136,13 +140,19 @@ typedef union
 #define CANIOT_ETIMEOUT    0x04         // ERROR TIMEOUT
 #define CANIOT_EBUSY       0x05         // ERROR BUSY
 #define CANIOT_EFMT        0x06         // ERROR FORMAT
+#define CANIOT_EHANDLER     0x07         // ERROR UNDEFINED HANDLER 
+#define CANIOT_ETELEMETRY   0x08         // ERROR TELEMETRY
 
 #define CANIOT_ENOINIT     0x10         // ERROR NOT INITIALIZED
 #define CANIOT_EDRIVER     0x11         // ERROR DRIVER
 
-#define CANIOT_ENIMPL      0x0F         // ERROR NOT IMPLEMENTED
+#define CANIOT_ENIMPL      0xFE         // ERROR NOT IMPLEMENTED
 
-#define CANIOT_ERROR     0xFF           // ANY ERROR
+#define CANIOT_ERROR       0xFF         // ANY ERROR + -1
+
+/*___________________________________________________________________________*/
+
+#define CONFIG_TELEMETRY_DISABLE    0
 
 /*___________________________________________________________________________*/
 

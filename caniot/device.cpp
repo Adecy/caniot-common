@@ -2,9 +2,12 @@
 
 #include <errno.h>
 
-can_device *can_device::p_instance;
-
+// attributes in eeprom on init
 extern struct can_device::attributes can_device::attributes;
+
+/*___________________________________________________________________________*/
+
+can_device *can_device::p_instance;
 
 /*___________________________________________________________________________*/
 
@@ -48,6 +51,8 @@ void can_device::process(void)
     // update uptime
     timer2_uptime(&p_system->uptime);
 
+    uint8_t err = CAN_OK;
+
     if (flag_can)
     {
         while (CAN_MSGAVAIL == p_can->checkReceive())
@@ -56,17 +61,54 @@ void can_device::process(void)
 
             print_can_expl(request);
 
-            int ret = dispatch_request(request, response);
-            if (ret == CANIOT_OK)
+            memset(response.buffer, 0x00, 8);
+            err = dispatch_request(request, response);
+            if (err == CANIOT_OK)
             {
                 print_can_expl(response);
-                send_response(response);
+
+                err = send_response(response);
             }
             else if (LOOPBACK_IF_ERR)
             {
-                send_response(request);
+                err = send_response(request);
             }
         }
+    }
+
+    if ((nullptr != m_telemetry_builder) && (p_config->telemetry_period > 0))
+    {
+        if (p_system->uptime - p_system->last_telemetry >= p_config->telemetry_period)
+        {
+            p_system->last_telemetry = p_system->uptime;
+
+            err = m_telemetry_builder(response.buffer, response.len);
+
+            if (err == CANIOT_OK)
+            {
+                if (response.len == get_data_type_size((data_type_t)__DEVICE_TYPE__))
+                {
+                    memset(response.buffer, 0x00, 8);
+                    response.id.value = BUILD_ID(type_t::telemetry, query_t::response, controller_t::broadcast, __DEVICE_TYPE__, __DEVICE_ID__);
+                    
+                    print_can_expl(response);
+                    err = send_response(response);
+                }
+                else
+                {
+                    // error failed to send telemetry message
+                    err = CANIOT_ETELEMETRY;
+                }
+            }
+        }
+    }
+
+    // handle errors 
+    if (err != CANIOT_OK)
+    {
+        usart_print("Error : ");
+        usart_hex(err);
+        usart_transmit('\n');
     }
 }
 
@@ -82,27 +124,44 @@ uint8_t can_device::dispatch_request(Message &request, Message &response)
 
         switch (request.get_type())
         {
-            case type_t::command:
-                ret = handle_command(request.get_data_type(), response);
-                break;
-
-            case type_t::read_attribute:
-                if (request.len == 2)
+        case type_t::command:
+        {
+            const data_type_t dt = request.get_data_type();
+            if ((dt == p_identification->device.type) && (request.len == get_data_type_size(dt)))
+            {
+                if (m_command_handler != nullptr)
                 {
-                    ret = read_attribute(*(uint16_t*) request.buffer, response);
+                    ret = m_command_handler(request.buffer, request.len);
                 }
-                break;
-
-            case type_t::write_attribute:
-                if ((request.len >= 3) && (request.len <= 6))
+                else
                 {
-                    ret = write_attribute(*(uint16_t*) request.buffer, *(uint32_t*) &request.buffer[2], response);
+                    ret = CANIOT_EHANDLER;
                 }
-                break;
+            }
+            else
+            {
+                ret = CANIOT_ECMD;
+            }
+        }
+        break;
 
-            case type_t::telemetry:
-            default:
-                ret = CANIOT_ENPROC;  // error unprocessable request type
+        case type_t::read_attribute:
+            if (request.len == 2)
+            {
+                ret = read_attribute(*(uint16_t *)request.buffer, response);
+            }
+            break;
+
+        case type_t::write_attribute:
+            if ((request.len >= 3) && (request.len <= 6))
+            {
+                ret = write_attribute(*(uint16_t *)request.buffer, *(uint32_t *)&request.buffer[2], response);
+            }
+            break;
+
+        case type_t::telemetry:
+        default:
+            ret = CANIOT_ENPROC; // error unprocessable request type
         }
 
         if (ret == CANIOT_OK)   // success
@@ -129,8 +188,6 @@ uint8_t can_device::read_attribute(const uint16_t key, Message &response)
     {
         *(uint32_t*) response.buffer = p_system->abstime;
         response.len = 4u;
-
-        usart_print("read_attribute abstime");
     }
 
     return 0;
@@ -170,9 +227,11 @@ void can_device::print_identification(void)
 
     usart_print("type    = ");
     usart_hex(p_identification->device.type);
-    usart_transmit('\n');
+    usart_transmit('\t');
 
-    usart_print("version = ");
+    print_prog_data_type((data_type_t) p_identification->device.type);
+
+    usart_print("\nversion = ");
     usart_u16(p_identification->version);
     usart_transmit('\n');
 }
