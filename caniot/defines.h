@@ -122,7 +122,7 @@ typedef union
 // #define DEVICE_RXF0     0x300
 // #define DEVICE_RXF1     0x300
 // #define DEVICE_RXF0     0 | (0b111111 << 5)
-#define DEVICE_RXF0     0 | (__DEVICE_TYPE__ << 8) | (__DEVICE_ID__ << 5)
+#define DEVICE_RXF0     0 | (__DEVICE_TYPE__ << 5) | (__DEVICE_ID__ << 8)
 #define DEVICE_RXF1     DEVICE_RXF0
 
 #define DEVICE_RXM1     DEVICE_RXM0
@@ -140,8 +140,8 @@ typedef union
 #define CANIOT_ETIMEOUT    0x04         // ERROR TIMEOUT
 #define CANIOT_EBUSY       0x05         // ERROR BUSY
 #define CANIOT_EFMT        0x06         // ERROR FORMAT
-#define CANIOT_EHANDLER     0x07         // ERROR UNDEFINED HANDLER 
-#define CANIOT_ETELEMETRY   0x08         // ERROR TELEMETRY
+#define CANIOT_EHANDLER    0x07         // ERROR UNDEFINED HANDLER 
+#define CANIOT_ETELEMETRY  0x08         // ERROR TELEMETRY
 
 #define CANIOT_ENOINIT     0x10         // ERROR NOT INITIALIZED
 #define CANIOT_EDRIVER     0x11         // ERROR DRIVER

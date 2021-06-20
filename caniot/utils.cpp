@@ -136,7 +136,7 @@ void print_can_expl(can_id_t id, const uint8_t * const buffer, const uint8_t len
         usart_u8(id.bitfields.device_id);
         usart_transmit(' ');
         print_prog_data_type((data_type_t) id.bitfields.device_type);
-        usart_transmit(' : ');
+        usart_print(" : ");
     }
 
     for (uint_fast8_t i = 0; i < len; i++)

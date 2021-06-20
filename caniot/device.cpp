@@ -63,6 +63,7 @@ void can_device::process(void)
 
             memset(response.buffer, 0x00, 8);
             err = dispatch_request(request, response);
+            
             if (err == CANIOT_OK)
             {
                 print_can_expl(response);
@@ -202,11 +203,6 @@ uint8_t can_device::write_attribute(const uint16_t key, const uint32_t value, Me
     }
 
     return read_attribute(key, response);
-}
-
-uint8_t can_device::handle_command(const data_type_t data_type, Message &response)
-{
-    return 0;
 }
 
 uint8_t can_device::send_response(Message &response)

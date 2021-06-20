@@ -144,7 +144,6 @@ public:
 
     uint8_t dispatch_request(Message &request, Message &response);
     
-    uint8_t handle_command(const data_type_t data_type, Message &response);
     uint8_t read_attribute(const uint16_t key, Message &response);
     uint8_t write_attribute(const uint16_t key, const uint32_t value, Message &response);
 
