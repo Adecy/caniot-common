@@ -20,8 +20,8 @@ typedef enum : uint8_t
     read_attribute = 0b11,
 } type_t;
 
-#define FRAME_QUERY             0b1
-#define FRAME_RESPONSE          0b0
+#define FRAME_QUERY             0b0
+#define FRAME_RESPONSE          0b1
 
 typedef enum : uint8_t
 {
@@ -113,6 +113,8 @@ typedef union
 /*___________________________________________________________________________*/
 
 #define BUILD_ID(type, qr, controller, devicetype, deviceid) (type | qr << 2 | controller << 3 | devicetype << 5 | deviceid << 8)
+
+#define HAS_RESPONSE_TO_REQUEST(id) ((id & 0b111) == (FRAME_COMMAND | FRAME_RESPONSE << 2))
 
 /*___________________________________________________________________________*/
 

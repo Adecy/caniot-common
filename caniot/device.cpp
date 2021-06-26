@@ -13,7 +13,7 @@ can_device *can_device::p_instance;
 
 ISR(INT0_vect)
 {
-    can_device::get_instance()->flag_can = 1u;
+    SET_FLAG_COMMAND(can_device::get_instance()->flags);
 }
 
 void can_device::initialize(void)
@@ -53,9 +53,9 @@ void can_device::process(void)
 
     uint8_t err = CAN_OK;
 
-    if (flag_can)
+    if (TEST_FLAG_COMMAND(flags))
     {
-        while (CAN_MSGAVAIL == p_can->checkReceive())
+        if (CAN_MSGAVAIL == p_can->checkReceive())
         {
             p_can->readMsgBufID(&request.id.value, &request.len, request.buffer);
 
@@ -64,27 +64,39 @@ void can_device::process(void)
             memset(response.buffer, 0x00, 8);
             err = dispatch_request(request, response);
             
-            if (err == CANIOT_OK)
+            // there is no response 
+            if (HAS_RESPONSE_TO_REQUEST(request.id.value))
             {
-                print_can_expl(response);
+                if (err == CANIOT_OK)
+                {
+                    print_can_expl(response);
 
-                err = send_response(response);
+                    err = send_response(response);
+                }
+                else if (LOOPBACK_IF_ERR)
+                {
+                    err = send_response(request);
+                }
             }
-            else if (LOOPBACK_IF_ERR)
-            {
-                err = send_response(request);
-            }
+        }
+        else
+        {
+            CLEAR_FLAG_COMMAND(flags);
         }
     }
 
-    if ((nullptr != m_telemetry_builder) && (p_config->telemetry_period > 0))
+    if (nullptr != m_telemetry_builder)
     {
-        if (p_system->uptime - p_system->last_telemetry >= p_config->telemetry_period)
+        if ((p_config->telemetry_period > 0) && (p_system->uptime - p_system->last_telemetry >= p_config->telemetry_period))
+        {
+            SET_FLAG_TELEMETRY(flags);
+        }
+
+        if (TEST_FLAG_TELEMETRY(flags))
         {
             p_system->last_telemetry = p_system->uptime;
 
             err = m_telemetry_builder(response.buffer, response.len);
-
             if (err == CANIOT_OK)
             {
                 if (response.len == get_data_type_size((data_type_t)__DEVICE_TYPE__))
@@ -101,6 +113,8 @@ void can_device::process(void)
                     err = CANIOT_ETELEMETRY;
                 }
             }
+
+            CLEAR_FLAG_TELEMETRY(flags);
         }
     }
 
@@ -133,6 +147,10 @@ uint8_t can_device::dispatch_request(Message &request, Message &response)
                 if (m_command_handler != nullptr)
                 {
                     ret = m_command_handler(request.buffer, request.len);
+                    if (ret == CANIOT_OK)
+                    {
+                        SET_FLAG_TELEMETRY(flags);
+                    }
                 }
                 else
                 {
@@ -171,7 +189,7 @@ uint8_t can_device::dispatch_request(Message &request, Message &response)
         }
         else    // error
         {
-            response.set_errno(-ret);
+            response.set_errno(ret);
         }
 
         return CANIOT_OK;
@@ -208,6 +226,11 @@ uint8_t can_device::write_attribute(const uint16_t key, const uint32_t value, Me
 uint8_t can_device::send_response(Message &response)
 {
     return p_can->sendMsgBuf(response.id.value, CAN_STDID, response.len, response.buffer);
+}
+
+void can_device::request_telemetry(void)
+{
+    SET_FLAG_TELEMETRY(flags);
 }
 
 /*___________________________________________________________________________*/

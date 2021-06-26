@@ -41,7 +41,7 @@ void timer2_copy_counter(uint32_t *p_copy)
 
 void timer2_uptime(uint32_t *p_uptime)
 {
-    timer2_copy_counter(p_uptime);
-
-    *p_uptime = *p_uptime / 100;
+    uint32_t tmp;
+    timer2_copy_counter(&tmp);
+    *p_uptime = tmp / 100;
 }
