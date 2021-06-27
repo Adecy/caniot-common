@@ -27,15 +27,26 @@ void can_device::initialize(void)
 
     m_error = CANIOT_OK;
 
-    p_can->init_Mask(0, CAN_STDID, DEVICE_RXM0);
-    p_can->init_Filt(0, CAN_STDID, DEVICE_RXF0);
-    p_can->init_Filt(1, CAN_STDID, DEVICE_RXF1);
+    uint8_t err = MCP2515_OK;
+    err |= p_can->init_Mask(0, CAN_STDID, DEVICE_RXM0);
+    err |= p_can->init_Filt(0, CAN_STDID, DEVICE_RXF0);
+    err |= p_can->init_Filt(1, CAN_STDID, DEVICE_RXF1);
 
-    p_can->init_Mask(1, CAN_STDID, DEVICE_RXM1);
-    p_can->init_Filt(2, CAN_STDID, DEVICE_RXF2);
-    p_can->init_Filt(3, CAN_STDID, DEVICE_RXF3);
-    p_can->init_Filt(4, CAN_STDID, DEVICE_RXF4);
-    p_can->init_Filt(5, CAN_STDID, DEVICE_RXF5);
+    err |= p_can->init_Mask(1, CAN_STDID, DEVICE_RXM1);
+    err |= p_can->init_Filt(2, CAN_STDID, DEVICE_RXF2);
+    err |= p_can->init_Filt(3, CAN_STDID, DEVICE_RXF3);
+    err |= p_can->init_Filt(4, CAN_STDID, DEVICE_RXF4);
+    err |= p_can->init_Filt(5, CAN_STDID, DEVICE_RXF5);
+
+    if (err != CANIOT_OK)
+    {
+        static const char failed_init[] PROGMEM = "failed to initialize mcp2515";
+        usart_printl_p(failed_init);
+
+        m_error = CANIOT_EDRIVER;
+
+        exit(m_error);
+    }
 
     // interrupt when receiving a can message
     // falling on INT0
@@ -50,76 +61,101 @@ void can_device::process(void)
 {
     // update uptime
     timer2_uptime(&p_system->uptime);
-
-    uint8_t err = CAN_OK;
+    if (p_config->telemetry_period && (uptime() - p_system->last_telemetry >= p_config->telemetry_period))
+    {
+        SET_FLAG_TELEMETRY(flags);
+    }
 
     if (TEST_FLAG_COMMAND(flags))
     {
-        if (CAN_MSGAVAIL == p_can->checkReceive())
+        process_command();
+    }
+    
+    if (TEST_FLAG_TELEMETRY(flags))
+    {
+        process_telemetry();
+    }
+}
+
+void can_device::process_command(void)
+{
+    uint8_t err = CAN_OK;
+
+    if (CAN_MSGAVAIL == p_can->checkReceive())
+    {
+        p_can->readMsgBufID(&request.id.value, &request.len, request.buffer);
+
+        print_can_expl(request);
+
+        memset(response.buffer, 0x00, 8);
+
+        err = dispatch_request(request, response);
+        if (request.need_response())
         {
-            p_can->readMsgBufID(&request.id.value, &request.len, request.buffer);
-
-            print_can_expl(request);
-
-            memset(response.buffer, 0x00, 8);
-            err = dispatch_request(request, response);
-            if (request.need_response())
+            if (err == CANIOT_OK)
             {
-                if (err == CANIOT_OK)
-                {
-                    print_can_expl(response);
+                print_can_expl(response);
 
-                    err = send_response(response);
-                }
-                else if (LOOPBACK_IF_ERR)
-                {
-                    err = send_response(request);
-                }
+                err = send_response(response);
+            }
+            else if (LOOPBACK_IF_ERR)
+            {
+                err = send_response(request);
             }
         }
-        else
-        {
-            CLEAR_FLAG_COMMAND(flags);
-        }
     }
+    else
+    {
+        CLEAR_FLAG_COMMAND(flags);
+    }
+
+    // handle errors
+    if (err != CANIOT_OK)
+    {
+        usart_print("Error command handling : ");
+        usart_hex(err);
+        usart_transmit('\n');
+    }
+}
+
+void can_device::process_telemetry(void)
+{
+    uint8_t err = CAN_OK;
 
     if (nullptr != m_telemetry_builder)
     {
-        if ((p_config->telemetry_period > 0) && (p_system->uptime - p_system->last_telemetry >= p_config->telemetry_period))
-        {
-            SET_FLAG_TELEMETRY(flags);
-        }
+        p_system->last_telemetry = p_system->uptime;
 
-        if (TEST_FLAG_TELEMETRY(flags))
+        memset(response.buffer, 0x00, 8);
+        err = m_telemetry_builder(response.buffer, response.len);
+        if (err == CANIOT_OK)
         {
-            p_system->last_telemetry = p_system->uptime;
-
-            err = m_telemetry_builder(response.buffer, response.len);
-            if (err == CANIOT_OK)
+            // length must be at least biffer, it may contain more information
+            if (response.len >= get_data_type_size((data_type_t)__DEVICE_TYPE__))
             {
-                if (response.len == get_data_type_size((data_type_t)__DEVICE_TYPE__))
-                {
-                    memset(response.buffer, 0x00, 8);
-                    response.id.value = BUILD_ID(type_t::telemetry, query_t::response, controller_t::broadcast, __DEVICE_TYPE__, __DEVICE_ID__);
-                    
-                    print_can_expl(response);
-                    err = send_response(response);
-                }
-                else
-                {
-                    // error failed to send telemetry message
-                    err = CANIOT_ETELEMETRY;
-                }
-            }
+                response.id.value = BUILD_ID(type_t::telemetry, query_t::response, controller_t::broadcast, __DEVICE_TYPE__, __DEVICE_ID__);
 
-            CLEAR_FLAG_TELEMETRY(flags);
+                print_can_expl(response);
+                err = send_response(response);
+            }
+            else
+            {
+                // error failed to send telemetry message
+                err = CANIOT_ETELEMETRY;
+            }
         }
+
+        CLEAR_FLAG_TELEMETRY(flags);
+    }
+    else
+    {
+        err = CANIOT_EHANDLERT;
     }
 
-    // handle errors 
+    // handle errors
     if (err != CANIOT_OK)
     {
-        usart_print("Error : ");
+        usart_print("Error telemetry : ");
         usart_hex(err);
         usart_transmit('\n');
     }
@@ -152,7 +188,7 @@ uint8_t can_device::dispatch_request(Message &request, Message &response)
                 }
                 else
                 {
-                    ret = CANIOT_EHANDLER;
+                    ret = CANIOT_EHANDLERC;
                 }
             }
             else
@@ -190,7 +226,7 @@ uint8_t can_device::dispatch_request(Message &request, Message &response)
             response.set_errno(ret);
         }
 
-        return CANIOT_OK;
+        return ret;
     }
     else
     {

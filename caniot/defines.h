@@ -14,10 +14,10 @@
 
 typedef enum : uint8_t
 {
-    command = 0b00,
-    telemetry = 0b01,
-    write_attribute = 0b10,
-    read_attribute = 0b11,
+    command = FRAME_COMMAND,
+    telemetry = FRAME_TELEMETRY,
+    write_attribute = FRAME_WRITE_ATTRIBUTE,
+    read_attribute = FRAME_READ_ATTRIBUTE,
 } type_t;
 
 #define FRAME_QUERY             0b0
@@ -25,8 +25,8 @@ typedef enum : uint8_t
 
 typedef enum : uint8_t
 {
-    query = 0b00,
-    response = 0b01,
+    query = FRAME_QUERY,
+    response = FRAME_RESPONSE,
 } query_t;
 
 #define CONTROLLER_MAIN         0b00
@@ -36,10 +36,10 @@ typedef enum : uint8_t
 
 typedef enum : uint8_t
 {
-    main_controller = 0b00,
-    controller1 = 0b01,
-    controller2 = 0b10,
-    broadcast = 0b11
+    main_controller = CONTROLLER_MAIN,
+    controller1 = CONTROLLER_1,
+    controller2 = CONTROLLER_2,
+    broadcast = CONTROLLER_BROADCAST
 } controller_t;
 
 #define DATA_TYPE_U             0
@@ -53,14 +53,14 @@ typedef enum : uint8_t
 
 typedef enum : uint8_t
 {
-    U = 0,
-    CR = 1,
-    CRA = 2,
-    CRT = 3,
-    CRTTA = 4,
-    CRTAAA = 5,
-    TTTT = 6,
-    UNDEFINED = 7,
+    U = DATA_TYPE_U,
+    CR = DATA_TYPE_CR,
+    CRA = DATA_TYPE_CRA,
+    CRT = DATA_TYPE_CRT,
+    CRTTA = DATA_TYPE_CRTTA,
+    CRTAAA = DATA_TYPE_CRTAAA,
+    TTTT = DATA_TYPE_TTTT,
+    UNDEFINED = DATA_TYPE_UNDEFINED,
 } data_type_t;
 
 #define DEVICE_RESERVED         0
@@ -114,7 +114,7 @@ typedef union
 
 #define BUILD_ID(type, qr, controller, devicetype, deviceid) (type | qr << 2 | controller << 3 | devicetype << 5 | deviceid << 8)
 
-#define HAS_RESPONSE_TO_REQUEST(id) ((id & 0b111) == (FRAME_COMMAND | FRAME_RESPONSE << 2))
+#define HAS_RESPONSE_TO_REQUEST(id) ((id & 0b111) != (FRAME_COMMAND | FRAME_QUERY << 2))
 
 /*___________________________________________________________________________*/
 
@@ -128,7 +128,7 @@ typedef union
 #define DEVICE_RXF1     DEVICE_RXF0
 
 #define DEVICE_RXM1     DEVICE_RXM0
-#define DEVICE_RXF2     0 | 0b111111 << 5
+#define DEVICE_RXF2     (FRAME_QUERY << 2) | 0b111111 << 5
 #define DEVICE_RXF3     DEVICE_RXF2
 #define DEVICE_RXF4     DEVICE_RXF3
 #define DEVICE_RXF5     DEVICE_RXF4
@@ -142,8 +142,9 @@ typedef union
 #define CANIOT_ETIMEOUT    0x04         // ERROR TIMEOUT
 #define CANIOT_EBUSY       0x05         // ERROR BUSY
 #define CANIOT_EFMT        0x06         // ERROR FORMAT
-#define CANIOT_EHANDLER    0x07         // ERROR UNDEFINED HANDLER 
-#define CANIOT_ETELEMETRY  0x08         // ERROR TELEMETRY
+#define CANIOT_EHANDLERC   0x07         // ERROR UNDEFINED COMMAND HANDLER 
+#define CANIOT_EHANDLERT   0x08         // ERROR UNDEFINED TELEMETRY HANDLER
+#define CANIOT_ETELEMETRY  0x09         // ERROR TELEMETRY
 
 #define CANIOT_ENOINIT     0x10         // ERROR NOT INITIALIZED
 #define CANIOT_EDRIVER     0x11         // ERROR DRIVER

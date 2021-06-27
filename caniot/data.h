@@ -5,6 +5,8 @@
 
 #include "avr/pgmspace.h"
 
+#define CANIOT_GET_LEN(len , type) (len = get_data_type_size(data_type_t::type))
+
 const uint8_t get_data_type_size(data_type_t dt);
 
 #endif

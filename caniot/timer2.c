@@ -39,9 +39,14 @@ void timer2_copy_counter(uint32_t *p_copy)
     sei();
 }
 
-void timer2_uptime(uint32_t *p_uptime)
+void timer2_uptime_centiseconds(time_cs_t *p_uptime_cs)
 {
-    uint32_t tmp;
-    timer2_copy_counter(&tmp);
-    *p_uptime = tmp / 100;
+    timer2_copy_counter(p_uptime_cs);
+}
+
+void timer2_uptime(time_s_t *p_uptime)
+{
+    uint32_t uptime_cs;
+    timer2_uptime_centiseconds(&uptime_cs);
+    *p_uptime = uptime_cs / 100;
 }

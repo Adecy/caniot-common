@@ -13,7 +13,7 @@
 
 /*___________________________________________________________________________*/
 
-#define LOOPBACK_IF_ERR 1
+#define LOOPBACK_IF_ERR 0
 
 /*___________________________________________________________________________*/
 typedef struct // 36 B
@@ -87,7 +87,7 @@ public:
 
     mcp2515_can * p_can;
 
-    uint8_t m_ext_int_pin;
+    uint8_t m_ext_int_pin;  // ignored, default 0
     uint32_t m_speedset;
     uint8_t m_clockset;
 
@@ -153,6 +153,12 @@ public:
 
     void print_identification(void);
 
+    void request_telemetry(void);
+
+protected:
+    void process_command(void);
+    void process_telemetry(void);
+
     uint8_t dispatch_request(Message &request, Message &response);
     
     uint8_t read_attribute(const uint16_t key, Message &response);
@@ -160,8 +166,6 @@ public:
 
     void prepare_error(Message &request, const uint8_t errno);
     uint8_t send_response(Message &response);    
-
-    void request_telemetry(void);
 };
 
 /*___________________________________________________________________________*/
