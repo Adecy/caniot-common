@@ -44,6 +44,11 @@ public:
         id.bitfields.query = 0;
         id.bitfields.type = 0;
     }
+
+    bool need_response(void) const
+    {
+        return HAS_RESPONSE_TO_REQUEST(id.value);
+    }
 };
 
 #endif

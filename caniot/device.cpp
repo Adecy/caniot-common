@@ -63,9 +63,7 @@ void can_device::process(void)
 
             memset(response.buffer, 0x00, 8);
             err = dispatch_request(request, response);
-            
-            // there is no response 
-            if (HAS_RESPONSE_TO_REQUEST(request.id.value))
+            if (request.need_response())
             {
                 if (err == CANIOT_OK)
                 {

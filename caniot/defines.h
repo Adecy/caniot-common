@@ -124,7 +124,7 @@ typedef union
 // #define DEVICE_RXF0     0x300
 // #define DEVICE_RXF1     0x300
 // #define DEVICE_RXF0     0 | (0b111111 << 5)
-#define DEVICE_RXF0     0 | (__DEVICE_TYPE__ << 5) | (__DEVICE_ID__ << 8)
+#define DEVICE_RXF0     (FRAME_QUERY << 2) | (__DEVICE_TYPE__ << 5) | (__DEVICE_ID__ << 8)
 #define DEVICE_RXF1     DEVICE_RXF0
 
 #define DEVICE_RXM1     DEVICE_RXM0
