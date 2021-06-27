@@ -68,16 +68,16 @@ void can_device::process(void)
 
     if (TEST_FLAG_COMMAND(flags))
     {
-        process_command();
+        process_query();
     }
-    
+
     if (TEST_FLAG_TELEMETRY(flags))
     {
         process_telemetry();
     }
 }
 
-void can_device::process_command(void)
+void can_device::process_query(void)
 {
     uint8_t err = CAN_OK;
 

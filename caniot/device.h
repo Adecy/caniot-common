@@ -156,7 +156,7 @@ public:
     void request_telemetry(void);
 
 protected:
-    void process_command(void);
+    void process_query(void);
     void process_telemetry(void);
 
     uint8_t dispatch_request(Message &request, Message &response);
