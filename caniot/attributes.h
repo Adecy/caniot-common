@@ -2,12 +2,16 @@
 #ifndef _ATTRIBUTES_H
 #define _ATTRIBUTES_H
 
+/*___________________________________________________________________________*/
+
 #include <stdint.h>
 
 #include <avr/pgmspace.h>
 #include <avr/eeprom.h>
 
 #include <utils.h>
+
+/*___________________________________________________________________________*/
 
 #define ATTR_IDENTIFICATION 0
 #define ATTR_SYSTEM 1
@@ -24,6 +28,8 @@
 #define ATTR_READONLY 1 << 3
 
 #define ATTR_DEFAULT ATTR_WRITTABLE
+
+/*___________________________________________________________________________*/
 
 typedef enum : uint8_t
 {
@@ -49,6 +55,8 @@ struct attribute_t
     uint8_t readonly;
     char name[20];
 };
+
+/*___________________________________________________________________________*/
 
 static const struct section_t attributes_sections[] PROGMEM {
     {ATTR_IDENTIFICATION, RAM | PROGMEMORY | READONLY, "identification"},
@@ -77,34 +85,25 @@ static const struct attribute_t attributes[] PROGMEM = {
     {ATTR_SCHEDULES, 4, 1, ATTR_DEFAULT, "command"},
 };
 
-class Attributes
+/*___________________________________________________________________________*/
+
+typedef uint16_t key_t;
+
+typedef union
 {
-public:
-    typedef uint16_t key_t;
+    uint32_t u32;
+    uint16_t u16;
+    uint8_t u8;
+} value_t;
 
-    typedef union
-    {
-        uint32_t u32;
-        uint16_t u16;
-        uint8_t u8;
-    } value_t;
+typedef struct
+{
+    uint8_t section;
+    section_option_t options;
+    uint8_t offset;
+    uint8_t size;
+} attr_ref_t;
 
-    typedef struct
-    {
-        uint8_t section;
-        section_option_t options;
-        uint8_t offset;
-        uint8_t size;
-    } attr_ref_t;
-
-    static void init();
-
-    static const uint8_t read_attribute(const key_t key, value_t *const p_value);
-    static const uint8_t write_attribute(const key_t key, const value_t value);
-
-protected:
-    static const uint8_t resolve_attribute(const key_t key, attr_ref_t *const p_attr_ref);
-    static void *get_section_address(const uint8_t section);
-};
+/*___________________________________________________________________________*/
 
 #endif

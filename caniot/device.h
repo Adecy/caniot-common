@@ -10,6 +10,7 @@
 #include "message.h"
 #include "timer2.h"
 #include "data.h"
+#include "attributes.h"
 
 /*___________________________________________________________________________*/
 
@@ -155,8 +156,11 @@ protected:
 
     uint8_t dispatch_request(Message &request, Message &response);
     
-    uint8_t read_attribute(const uint16_t key, Message &response);
-    uint8_t write_attribute(const uint16_t key, const uint32_t value, Message &response);
+    static const uint8_t read_attribute(const key_t key, value_t *const p_value);
+    static const uint8_t write_attribute(const key_t key, const value_t value);
+
+    static const uint8_t resolve_attribute(const key_t key, attr_ref_t *const p_attr_ref);
+    static void *get_section_address(const uint8_t section);
 
     void prepare_error(Message &request, const uint8_t errno);
     uint8_t send_response(Message &response);    
