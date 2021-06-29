@@ -47,7 +47,8 @@ public:
 
     bool need_response(void) const
     {
-        return HAS_RESPONSE_TO_REQUEST(id.value);
+        return ((id.value & 0b111) != (FRAME_COMMAND | FRAME_QUERY << 2)) &&
+               ((id.value & 0b111) != (FRAME_TELEMETRY | FRAME_QUERY << 2));
     }
 };
 

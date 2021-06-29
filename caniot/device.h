@@ -15,6 +15,8 @@
 
 #define LOOPBACK_IF_ERR 0
 
+#define CANIOT_DRIVER_RETRY_DELAY_MS    1000
+
 /*___________________________________________________________________________*/
 typedef struct // 36 B
 {
@@ -34,7 +36,6 @@ typedef struct // 36 B
 
 /*___________________________________________________________________________*/
 
-extern mcp2515_can can;
 extern identification_t __device_identification__;  // get identification location in FLASH from linker script
 
 /*___________________________________________________________________________*/
@@ -66,22 +67,15 @@ public:
         schedule_t schedules[5];
     } config_t;
 
-    struct attributes
-    {
-        identification_t identification;
-        system_t system;
-        config_t config;
-    };
-    
+    identification_t identification;
+    system_t system;
 
 /*___________________________________________________________________________*/
 
-    //  __attribute__ ((section (".caniot_attributes")))
-    static struct attributes attributes;
-
-    identification_t *p_identification = &attributes.identification;    // in RAM todo in FLASH
-    system_t *p_system = &attributes.system;        // in RAM
-    config_t *p_config = &attributes.config;      // EEPROM
+    identification_t *p_identification = &identification;       // RAM (copied from flash)
+    system_t *p_system = &system;                               // RAM
+    config_t *p_config = 0;                                     // EEPROM
+    schedule_t *p_schedules = (schedule_t*) sizeof(config_t);   // EEPROM
 
 /*___________________________________________________________________________*/
 
@@ -137,7 +131,7 @@ public:
         // TODO load identification in .initX section
         memcpy_P(p_identification, (const void*) &__device_identification__, sizeof(identification_t));
 
-        // conpy configuration ineeprom
+        // copy configuration in eeprom
     }
 
     static can_device* get_instance(void) { return p_instance; }

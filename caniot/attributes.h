@@ -5,28 +5,106 @@
 #include <stdint.h>
 
 #include <avr/pgmspace.h>
+#include <avr/eeprom.h>
 
-// extern uint8_t caniot_attributes;
+#include <utils.h>
 
-struct attribute_ref {
-    uint16_t key;
-    uint8_t size;
-    char name[12];
+#define ATTR_IDENTIFICATION 0
+#define ATTR_SYSTEM 1
+#define ATTR_CONFIG 2
+#define ATTR_SCHEDULES 3
+
+#define ATTR_KEY_SECTION(key) (((uint16_t)key) >> 12)
+#define ATTR_KEY_ATTR(key) ((((uint16_t)key) >> 4) & 0xF)
+#define ATTR_KEY_PART(key) (((uint16_t)key) & 0xF)
+
+#define ATTR_KEY(section, attr, part) ((section & 0xF) << 12 | (attr & 0xFF) << 4 | (part & 0xF))
+
+#define ATTR_WRITTABLE 0
+#define ATTR_READONLY 1 << 3
+
+#define ATTR_DEFAULT ATTR_WRITTABLE
+
+typedef enum : uint8_t
+{
+    RAM = 1 << 0,
+    EEPROM = 1 << 1,
+    PROGMEMORY = 1 << 2,
+    READONLY = 1 << 3,
+    PRIVATE = 1 << 4, // unused
+} section_option_t;
+
+struct section_t
+{
+    uint8_t section;
+    uint8_t options;
+    char name[15];
 };
 
-const struct attribute_ref attributes[] PROGMEM = {
-    {0x0000u, 1, "nodeid"},
-    {0x0001u, 2, "version"},
-    {0x0003u, 32, "name"},
+struct attribute_t
+{
+    uint8_t section;
+    uint8_t index;
+    uint8_t size;
+    uint8_t readonly;
+    char name[20];
+};
 
-    {0x0100u, 4, "uptime"},
-    {0x0101u, 4, "abstime"},
-    {0x0102u, 4, "uptimeshift"},
-    {0x0103u, 4, "messagesent"},
-    {0x0104u, 4, "messegerecv"},
-    {0x0105u, 1, "battery"},
+static const struct section_t attributes_sections[] PROGMEM {
+    {ATTR_IDENTIFICATION, RAM | PROGMEMORY | READONLY, "identification"},
+    {ATTR_SYSTEM, RAM, "system"},
+    {ATTR_CONFIG, EEPROM, "configuration"},
+    {ATTR_SCHEDULES, EEPROM, "schedules"}
+};
 
-    {0x0200u, 4, "telemperiod"},
+static const struct attribute_t attributes[] PROGMEM = {
+    {ATTR_IDENTIFICATION, 0, 1, ATTR_DEFAULT, "nodeid"},
+    {ATTR_IDENTIFICATION, 1, 1, ATTR_DEFAULT, "version"},
+    {ATTR_IDENTIFICATION, 2, 32, ATTR_DEFAULT, "name"},
+
+    {ATTR_SYSTEM, 0, 4, ATTR_READONLY, "uptime"},
+    {ATTR_SYSTEM, 1, 4, ATTR_WRITTABLE, "abstime"},
+    {ATTR_SYSTEM, 2, 4, ATTR_READONLY, "uptime_shift"},
+    {ATTR_SYSTEM, 3, 4, ATTR_READONLY, "last_telemetry"},
+    {ATTR_SYSTEM, 4, 4, ATTR_READONLY, "message_sent"},
+    {ATTR_SYSTEM, 5, 4, ATTR_READONLY, "message_recv"},
+    {ATTR_SYSTEM, 6, 1, ATTR_READONLY, "battery"},
+
+    {ATTR_CONFIG, 0, 4, ATTR_DEFAULT, "telemetry_period"},
+
+    {ATTR_SCHEDULES, 1, 1, ATTR_DEFAULT, "days"},
+    {ATTR_SCHEDULES, 1, 1, ATTR_DEFAULT, "time"},
+    {ATTR_SCHEDULES, 4, 1, ATTR_DEFAULT, "command"},
+};
+
+class Attributes
+{
+public:
+    typedef uint16_t key_t;
+
+    typedef union
+    {
+        uint32_t u32;
+        uint16_t u16;
+        uint8_t u8;
+    } value_t;
+
+    typedef struct
+    {
+        uint8_t section;
+        section_option_t options;
+        uint8_t offset;
+        uint8_t size;
+    } attr_ref_t;
+
+    static void init();
+
+    static const uint8_t read_attribute(const key_t key, value_t *const p_value);
+    static const uint8_t write_attribute(const key_t key, const value_t value);
+
+protected:
+    static const uint8_t resolve_attribute(const key_t key, attr_ref_t *const p_attr_ref);
+    static void *get_section_address(const uint8_t section);
 };
 
 #endif

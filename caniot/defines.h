@@ -114,8 +114,6 @@ typedef union
 
 #define BUILD_ID(type, qr, controller, devicetype, deviceid) (type | qr << 2 | controller << 3 | devicetype << 5 | deviceid << 8)
 
-#define HAS_RESPONSE_TO_REQUEST(id) ((id & 0b111) != (FRAME_COMMAND | FRAME_QUERY << 2))
-
 /*___________________________________________________________________________*/
 
 #define DEVICE_ID_MODE  CAN_STDID
@@ -148,6 +146,12 @@ typedef union
 
 #define CANIOT_ENOINIT     0x10         // ERROR NOT INITIALIZED
 #define CANIOT_EDRIVER     0x11         // ERROR DRIVER
+
+#define CANIOT_EKEYSECTION 0x12
+#define CANIOT_EKEYATTR    0x13
+#define CANIOT_EKEYPART    0x14
+
+#define CANIOT_EREADONLY   0x15
 
 #define CANIOT_ENIMPL      0xFE         // ERROR NOT IMPLEMENTED
 

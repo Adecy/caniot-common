@@ -2,9 +2,6 @@
 
 #include <errno.h>
 
-// attributes in eeprom on init
-extern struct can_device::attributes can_device::attributes;
-
 /*___________________________________________________________________________*/
 
 can_device *can_device::p_instance;
@@ -20,7 +17,7 @@ void can_device::initialize(void)
 {
     while (CAN_OK != p_can->begin(m_speedset, m_clockset))
     {
-        _delay_ms(1000);
+        _delay_ms(CANIOT_DRIVER_RETRY_DELAY_MS);
 
         m_error = CANIOT_EDRIVER;
     };
@@ -88,7 +85,6 @@ void can_device::process_query(void)
         print_can_expl(request);
 
         memset(response.buffer, 0x00, 8);
-
         err = dispatch_request(request, response);
         if (request.need_response())
         {
@@ -213,6 +209,10 @@ uint8_t can_device::dispatch_request(Message &request, Message &response)
             break;
 
         case type_t::telemetry:
+            request_telemetry();
+            ret = CANIOT_OK;
+            break;
+            
         default:
             ret = CANIOT_ENPROC; // error unprocessable request type
         }
