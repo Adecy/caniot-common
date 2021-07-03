@@ -115,36 +115,45 @@ void print_can_expl(can_id_t id, const uint8_t * const buffer, const uint8_t len
     usart_transmit('[');
     usart_hex16(id.value);
     usart_print("] ");
-
-    print_prog_query((query_t) id.bitfields.query);
-
-    usart_transmit(' ');
-
-    print_prog_type((type_t) id.bitfields.type);
-
-    usart_print_p(msg_can_send_between);
-
-    print_prog_controller((controller_t) id.bitfields.controller);
-
-    if (id.is_broadcast())
+    
+    // todo here
+    if (id.is_error())
     {
-        usart_print(" and BROADCAST : ");
+        usart_print("Error frame : error = 0x");
+        usart_hex(buffer[0]);
     }
     else
     {
-        usart_print(" to device D");
-        usart_u8(id.bitfields.device_id);
+        print_prog_query((query_t)id.bitfields.query);
+
         usart_transmit(' ');
-        print_prog_data_type((data_type_t) id.bitfields.device_type);
-        usart_print(" : ");
+
+        print_prog_type((type_t)id.bitfields.type);
+
+        usart_print_p(msg_can_send_between);
+
+        print_prog_controller((controller_t)id.bitfields.controller);
+
+        if (id.is_broadcast())
+        {
+            usart_print(" and BROADCAST : ");
+        }
+        else
+        {
+            usart_print(" to device D");
+            usart_u8(id.bitfields.device_id);
+            usart_transmit(' ');
+            print_prog_data_type((data_type_t)id.bitfields.device_type);
+            usart_print(" : ");
+        }
+
+        for (uint_fast8_t i = 0; i < len; i++)
+        {
+            usart_hex(buffer[i]);
+            usart_transmit(' ');
+        }
     }
 
-    for (uint_fast8_t i = 0; i < len; i++)
-    {
-        usart_hex(buffer[i]);
-        usart_transmit(' ');
-    }
-    
     usart_transmit('\n');
 }
 

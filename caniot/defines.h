@@ -107,6 +107,11 @@ typedef union
         return (bitfields.device_type << 3 | bitfields.device_id) == DEVICE_BROADCAST;
     }
 
+    bool is_error(void) const
+    {
+        return (bitfields.query == query_t::response && bitfields.type == type_t::command);
+    }
+
 } can_id_t;
 #pragma pack(1)
 

@@ -76,6 +76,8 @@ void can_device::process(void)
 
     if (TEST_FLAG_TELEMETRY(flags))
     {
+        CLEAR_FLAG_TELEMETRY(flags);
+
         p_system->last_telemetry_error = process_telemetry();
     }
 }
@@ -154,7 +156,7 @@ uint8_t can_device::process_telemetry(void)
         err = m_telemetry_builder(response.buffer, response.len);
         if (err == CANIOT_OK)
         {
-            // length must be at least biffer, it may contain more information
+            // length must at least contain the data_type, it may contain more information
             if (response.len >= get_data_type_size((data_type_t)__DEVICE_TYPE__))
             {
                 p_system->stats.sent.telemetry++;
@@ -167,10 +169,10 @@ uint8_t can_device::process_telemetry(void)
             {
                 // error failed to send telemetry message
                 err = CANIOT_ETELEMETRY;
+
+                // don't retry immediately (can cause loop)
             }
         }
-
-        CLEAR_FLAG_TELEMETRY(flags);
     }
     else
     {
@@ -412,8 +414,7 @@ const uint8_t can_device::read_attribute(const attr_ref_t *const attr_ref, value
         {
             return CANIOT_ENIMPL;
         }
-
-        return CANIOT_OK;
+        err = CANIOT_OK;
     }
     return err;
 }
@@ -447,8 +448,7 @@ const uint8_t can_device::write_attribute(const attr_ref_t *const attr_ref, cons
         {
             return CANIOT_ENIMPL;
         }
-
-        return CANIOT_OK;
+        err = CANIOT_OK;
     }
     return err;
 }
