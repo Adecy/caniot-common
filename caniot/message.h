@@ -41,8 +41,10 @@ public:
     {
         len = 1u;
         buffer[0] = errno;
-        id.bitfields.query = 0;
-        id.bitfields.type = 0;
+
+        // correspond to an error frame 
+        id.bitfields.query = query_t::response;
+        id.bitfields.type = type_t::command;
     }
 
     bool need_response(void) const

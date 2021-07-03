@@ -153,13 +153,18 @@ typedef union
 
 #define CANIOT_EREADONLY   0x15
 
+#define CANIOT_NULL        0x16
+
 #define CANIOT_ENIMPL      0xFE         // ERROR NOT IMPLEMENTED
+
 
 #define CANIOT_ERROR       0xFF         // ANY ERROR + -1
 
 /*___________________________________________________________________________*/
 
 #define CONFIG_TELEMETRY_DISABLE    0
+
+#define MAINS_POWER_SUPPLY          0xFF
 
 /*___________________________________________________________________________*/
 

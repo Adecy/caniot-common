@@ -14,6 +14,18 @@
 
 /*___________________________________________________________________________*/
 
+#ifndef LOG_LEVEL
+#define LOG_LEVEL           3
+#endif
+
+#define LOG_LEVEL_DBG       LOG_LEVEL >= 4
+#define LOG_LEVEL_INFO      LOG_LEVEL >= 3
+#define LOG_LEVEL_WARNING   LOG_LEVEL >= 2
+#define LOG_LEVEL_ERROR     LOG_LEVEL >= 1
+#define LOG_LEVEL_NOTSET    LOG_LEVEL >= 0
+
+/*___________________________________________________________________________*/
+
 #define LOOPBACK_IF_ERR 0
 
 #define CANIOT_DRIVER_RETRY_DELAY_MS    1000
@@ -48,10 +60,26 @@ public:
     {
         uint32_t uptime;
         uint32_t abstime;
+        uint32_t calculated_abstime;
         uint32_t uptime_shift;
         uint32_t last_telemetry;
-        uint32_t message_sent;
-        uint32_t message_received;
+        struct {
+            struct {
+                uint32_t total;
+                uint32_t read_attribute;
+                uint32_t write_attribute;
+                uint32_t command;
+                uint32_t request_telemetry;
+                uint32_t processed;
+                uint32_t query_failed;
+            } received;
+            struct {
+                uint32_t total;
+                uint32_t telemetry;
+            } sent;
+        } stats;
+        uint8_t last_query_error;
+        uint8_t last_telemetry_error;
         uint8_t battery;
     } system_t;
 
@@ -148,16 +176,28 @@ public:
 
     void print_identification(void);
 
+/*___________________________________________________________________________*/
+
     void request_telemetry(void);
 
+    virtual const uint8_t battery(void) const;
+/*___________________________________________________________________________*/
+
 protected:
-    void process_query(void);
-    void process_telemetry(void);
+    uint8_t process_query(void);
+    uint8_t process_telemetry(void);
 
     uint8_t dispatch_request(Message &request, Message &response);
-    
-    static const uint8_t read_attribute(const key_t key, value_t *const p_value);
-    static const uint8_t write_attribute(const key_t key, const value_t value);
+
+    /**
+     * @brief 
+     * 
+     * @param attr_ref_p in RAM
+     * @param p_value 
+     * @return const uint8_t 
+     */
+    static const uint8_t read_attribute(const attr_ref_t *const attr_ref, value_t *const p_value);
+    static const uint8_t write_attribute(const attr_ref_t *const attr_ref, const value_t value);
 
     static const uint8_t resolve_attribute(const key_t key, attr_ref_t *const p_attr_ref);
     static void *get_section_address(const uint8_t section);

@@ -7,10 +7,13 @@
 
 #include "uart.h"
 #include "device.h"
+#include "attributes.h"
 
 /*___________________________________________________________________________*/
 
-#define ARRAY_SIZE(array) (sizeof(array) / sizeof(*array))
+#define ARRAY_SIZE(array) (sizeof(array) / sizeof(array[0]))
+#define MAX(a, b) ((a > b) ? (a) : (b))
+#define MIN(a, b) ((a < b) ? (a) : (b))
 
 /*___________________________________________________________________________*/
 
@@ -37,6 +40,13 @@ void print_time_sec(uint32_t time_sec);
 void debug_masks_filters(void);
 
 /*___________________________________________________________________________*/
+
+/**
+ * @brief Print attr ref object
+ * 
+ * @param attr_ref_p : pointers to attr_ref structure (in RAM)
+ */
+void print_attr_ref(attr_ref_t* attr_ref_p);
 
 
 #endif

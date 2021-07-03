@@ -187,3 +187,20 @@ void debug_masks_filters(void)
 }
 
 /*___________________________________________________________________________*/
+
+void print_attr_ref(attr_ref_t* attr_ref_p)
+{
+    usart_print("attr_ref 0x");
+    usart_hex16((uint16_t) attr_ref_p);
+    usart_print(" section=");
+    usart_u8(attr_ref_p->section);
+    usart_print(" options=");
+    usart_u8(attr_ref_p->options);
+    usart_print(" offset=");
+    usart_u8(attr_ref_p->offset);
+    usart_print(" size=");
+    usart_u8(attr_ref_p->read_size);
+    usart_transmit('\n');
+}
+
+/*___________________________________________________________________________*/

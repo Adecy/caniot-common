@@ -58,6 +58,12 @@ void can_device::process(void)
 {
     // update uptime
     timer2_uptime(&p_system->uptime);
+    p_system->calculated_abstime = abstime();
+
+    // calculation of quantities
+    // TODO do to it less often
+    p_system->battery = battery();
+
     if (p_config->telemetry_period && (uptime() - p_system->last_telemetry >= p_config->telemetry_period))
     {
         SET_FLAG_TELEMETRY(flags);
@@ -65,38 +71,56 @@ void can_device::process(void)
 
     if (TEST_FLAG_COMMAND(flags))
     {
-        process_query();
+        p_system->last_query_error = process_query();
     }
 
     if (TEST_FLAG_TELEMETRY(flags))
     {
-        process_telemetry();
+        p_system->last_telemetry_error = process_telemetry();
     }
 }
 
-void can_device::process_query(void)
+uint8_t can_device::process_query(void)
 {
     uint8_t err = CAN_OK;
-
     if (CAN_MSGAVAIL == p_can->checkReceive())
     {
         p_can->readMsgBufID(&request.id.value, &request.len, request.buffer);
+        p_system->stats.received.total++;
 
+#if LOG_LEVEL_INFO
         print_can_expl(request);
+#endif
 
         memset(response.buffer, 0x00, 8);
         err = dispatch_request(request, response);
-        if (request.need_response())
-        {
-            if (err == CANIOT_OK)
-            {
-                print_can_expl(response);
 
+#if LOG_LEVEL_DBG
+        usart_u8(err);
+        usart_printl(" = dispatch_request error");
+#endif
+
+        // success
+        if (err == CANIOT_OK)
+        {   
+            p_system->stats.received.processed++;
+            if (request.need_response())
+            {
                 err = send_response(response);
             }
-            else if (LOOPBACK_IF_ERR)
+        } 
+        else
+        {
+            // loopback if error
+            p_system->stats.received.query_failed++;
+            if (LOOPBACK_IF_ERR)
             {
                 err = send_response(request);
+            }
+            else // return error frame
+            {
+                response.set_errno(err);
+                err = send_response(response);
             }
         }
     }
@@ -105,6 +129,7 @@ void can_device::process_query(void)
         CLEAR_FLAG_COMMAND(flags);
     }
 
+#if LOG_LEVEL_ERROR
     // handle errors
     if (err != CANIOT_OK)
     {
@@ -112,9 +137,12 @@ void can_device::process_query(void)
         usart_hex(err);
         usart_transmit('\n');
     }
+#endif
+
+    return err;
 }
 
-void can_device::process_telemetry(void)
+uint8_t can_device::process_telemetry(void)
 {
     uint8_t err = CAN_OK;
 
@@ -129,9 +157,10 @@ void can_device::process_telemetry(void)
             // length must be at least biffer, it may contain more information
             if (response.len >= get_data_type_size((data_type_t)__DEVICE_TYPE__))
             {
-                response.id.value = BUILD_ID(type_t::telemetry, query_t::response, controller_t::broadcast, __DEVICE_TYPE__, __DEVICE_ID__);
+                p_system->stats.sent.telemetry++;
 
-                print_can_expl(response);
+                response.id.value = BUILD_ID(type_t::telemetry, query_t::response, controller_t::broadcast, __DEVICE_TYPE__, __DEVICE_ID__);
+                
                 err = send_response(response);
             }
             else
@@ -148,6 +177,7 @@ void can_device::process_telemetry(void)
         err = CANIOT_EHANDLERT;
     }
 
+#if LOG_LEVEL_ERROR
     // handle errors
     if (err != CANIOT_OK)
     {
@@ -155,12 +185,14 @@ void can_device::process_telemetry(void)
         usart_hex(err);
         usart_transmit('\n');
     }
+#endif
+
+    return err;
 }
 
 uint8_t can_device::dispatch_request(Message &request, Message &response)
 {
-    uint8_t ret = CANIOT_ERROR;
-
+    uint8_t ret = CANIOT_ENPROC;
     if (request.is_query())
     {
         response.id.value = request.id.value;
@@ -180,6 +212,7 @@ uint8_t can_device::dispatch_request(Message &request, Message &response)
                     if (ret == CANIOT_OK)
                     {
                         SET_FLAG_TELEMETRY(flags);
+                        p_system->stats.received.command++;
                     }
                 }
                 else
@@ -195,55 +228,90 @@ uint8_t can_device::dispatch_request(Message &request, Message &response)
         break;
 
         case type_t::read_attribute:
-            if (request.len == 2)
+            if (request.len == 2u)
             {
-                ret = read_attribute(*(key_t *) request.buffer, (value_t*) response.buffer);
+                const key_t key = *(key_t *)request.buffer;
+                attr_ref_t attr_ref;
+                ret = resolve_attribute(key, &attr_ref);
+                if (ret == CANIOT_OK)
+                {
+                    ret = read_attribute(&attr_ref, (value_t *)&response.buffer[2]);
+                    if (ret == CANIOT_OK)
+                    {
+                        response.len = 6u;
+                        *(key_t *)response.buffer = key; // copy key
+                        p_system->stats.received.read_attribute++;
+                    }
+                }
             }
             break;
 
         case type_t::write_attribute:
             if ((request.len >= 3) && (request.len <= 6))
             {
-                ret = write_attribute(*(key_t *)request.buffer, *(value_t *)&request.buffer[2]);
+                const key_t key = *(key_t *)request.buffer;
+                attr_ref_t attr_ref;
+                ret = resolve_attribute(key, &attr_ref);
+                if (ret == CANIOT_OK)
+                {
+                    ret = write_attribute(&attr_ref, *(value_t *)&request.buffer[2]);
+                    if (ret == CANIOT_OK)
+                    {
+                        // handle special cases
+                        if (key == KEY_ATTR_ABSTIME)
+                        {
+                            p_system->uptime_shift = p_system->uptime;
+#if LOG_LEVEL_DBG
+                            usart_printl("upated uptime_shift");
+#endif
+                        }
+
+                        // TODO : maybe read is not necessary
+                        ret = read_attribute(&attr_ref, (value_t *)&response.buffer[2]);
+                        if (ret == CANIOT_OK)
+                        {
+                            response.len = 6u;
+                            *(key_t *)response.buffer = key; // copy key
+                            p_system->stats.received.write_attribute++;
+                        }
+                    }
+                }
             }
             break;
 
         case type_t::telemetry:
             request_telemetry();
+            p_system->stats.received.request_telemetry++;
             ret = CANIOT_OK;
             break;
             
         default:
             ret = CANIOT_ENPROC; // error unprocessable request type
         }
-
-        if (ret == CANIOT_OK)   // success
-        {
-            p_system->message_received++;
-        }
-        else    // error
-        {
-            response.set_errno(ret);
-        }
-
-        return ret;
     }
-    else
-    {
-        // entity not processable
-        return CANIOT_ERROR;
-    }
+    return ret;
 }
 
 
 uint8_t can_device::send_response(Message &response)
 {
+#if LOG_LEVEL_INFO
+    print_can_expl(response);
+#endif
+
+    p_system->stats.sent.total++;
+
     return p_can->sendMsgBuf(response.id.value, CAN_STDID, response.len, response.buffer);
 }
 
 void can_device::request_telemetry(void)
 {
     SET_FLAG_TELEMETRY(flags);
+}
+
+const uint8_t can_device::battery(void) const
+{
+    return MAINS_POWER_SUPPLY;
 }
 
 /*___________________________________________________________________________*/
@@ -268,12 +336,18 @@ const uint8_t can_device::resolve_attribute(const key_t key, attr_ref_t *const p
                     if (attr_offset < attr_size)
                     {
                         const section_option_t option = (section_option_t)(pgm_read_byte(&section_p->options) |
-                                                                           (pgm_read_byte(&attributes[i].readonly) & (1 << 3)));
+                                                                           (pgm_read_byte(&attributes[i].readonly) & READONLY));
+                        // data in RAM
                         *p_attr_ref = {
                             section,
                             option,
-                            (uint8_t)(offset + attr_offset),
-                            (uint8_t)(attr_size - attr_offset)};
+                            (uint8_t) (offset + attr_offset),
+                            (uint8_t) MIN(attr_size - attr_offset, 4),
+                        };
+
+#if LOG_LEVEL_DBG
+                        print_attr_ref(p_attr_ref);
+#endif
 
                         return CANIOT_OK;
                     }
@@ -294,6 +368,7 @@ const uint8_t can_device::resolve_attribute(const key_t key, attr_ref_t *const p
     return CANIOT_EKEYSECTION;
 }
 
+// todo shorten this switch with an array of pointers, get rid of nullptr check
 void *can_device::get_section_address(const uint8_t section)
 {
     switch (section)
@@ -315,86 +390,65 @@ void *can_device::get_section_address(const uint8_t section)
     }
 }
 
-const uint8_t can_device::read_attribute(const key_t key, value_t *const p_value)
+const uint8_t can_device::read_attribute(const attr_ref_t *const attr_ref, value_t *const p_value)
 {
-    attr_ref_t attr_ref;
-
-    const uint8_t err = resolve_attribute(key, &attr_ref);
-    if (err == CANIOT_OK)
+    uint8_t err = CANIOT_NULL;
+    if (attr_ref != nullptr)
     {
-        if (attr_ref.options & READONLY)
+        const void *p = (void *)((uint16_t)get_section_address(attr_ref->section) + attr_ref->offset);
+        if (attr_ref->options & RAM) // priority for RAM
         {
-            return CANIOT_EREADONLY;
+            memcpy(p_value, p, attr_ref->read_size);
         }
-
-        const void *p = get_section_address(attr_ref.section);
-        
-        if ((p != nullptr) || (attr_ref.options & EEPROM)) // nullptr is a valid EEPROM address
+        else if (attr_ref->options & PROGMEMORY)
         {
-            p = (void *)((uint16_t)p + attr_ref.offset);
-
-            if (attr_ref.options & RAM)
-            {
-                memcpy(p_value, p, attr_ref.size);
-            }
-            else if (attr_ref.options & PROGMEMORY)
-            {
-                memcpy_P(p_value, p, attr_ref.size);
-            }
-            else if (attr_ref.options & EEPROM)
-            {
-                eeprom_read_block(p_value, p, attr_ref.size);
-            }
-            else
-            {
-                return CANIOT_ENIMPL;
-            }
-
-            return CANIOT_OK;
+            memcpy_P(p_value, p, attr_ref->read_size);
+        }
+        else if (attr_ref->options & EEPROM)
+        {
+            eeprom_read_block(p_value, p, attr_ref->read_size);
         }
         else
         {
             return CANIOT_ENIMPL;
         }
+
+        return CANIOT_OK;
     }
     return err;
 }
 
-const uint8_t can_device::write_attribute(const key_t key, const value_t value)
+const uint8_t can_device::write_attribute(const attr_ref_t *const attr_ref, const value_t value)
 {
-    attr_ref_t attr_ref;
-
-    const uint8_t err = resolve_attribute(key, &attr_ref);
-    if (err == CANIOT_OK)
+    uint8_t err = CANIOT_NULL;
+    if (attr_ref != nullptr)
     {
-        void *p = get_section_address(attr_ref.section);
-        if (p != nullptr)
+        if (attr_ref->options & READONLY)
         {
-            p = (void *)((uint16_t)p + attr_ref.offset);
+            return CANIOT_EREADONLY;
+        }
 
-            if (attr_ref.options & RAM)
-            {
-                memcpy(p, (void *)&value, attr_ref.size);
-            }
-            else if (attr_ref.options & PROGMEMORY)
-            {
-                return CANIOT_EREADONLY;
-            }
-            else if (attr_ref.options & EEPROM)
-            {
-                eeprom_write_block(p, (void *)&value, attr_ref.size);
-            }
-            else
-            {
-                return CANIOT_ENIMPL;
-            }
+        void* p = (void *)((uint16_t)get_section_address(attr_ref->section) + attr_ref->offset);
+        if (attr_ref->options & RAM)
+        {
+            memcpy(p, (void *)&value, attr_ref->read_size);
+        }
+        else if (attr_ref->options & PROGMEMORY)
+        {
+            return CANIOT_EREADONLY;
+        }
+        else if (attr_ref->options & EEPROM)
+        {
+            eeprom_write_block(p, (void *)&value, attr_ref->read_size);
 
-            return CANIOT_OK;
+            // warning if many writings
         }
         else
         {
             return CANIOT_ENIMPL;
         }
+
+        return CANIOT_OK;
     }
     return err;
 }
