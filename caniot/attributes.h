@@ -16,7 +16,7 @@
 #define ATTR_IDENTIFICATION 0
 #define ATTR_SYSTEM 1
 #define ATTR_CONFIG 2
-#define ATTR_SCHEDULES 3
+#define ATTR_SCHEDULE 3
 
 #define ATTR_KEY_SECTION(key) (((uint16_t)key) >> 12)
 #define ATTR_KEY_ATTR(key) ((((uint16_t)key) >> 4) & 0xFF)
@@ -65,7 +65,7 @@ static const struct section_t attributes_sections[] PROGMEM {
     {ATTR_IDENTIFICATION, RAM | PROGMEMORY | READONLY, "identification" /* , can_device::get_instance()->p_identification */ },
     {ATTR_SYSTEM, RAM, "system" /* , can_device::get_instance()->p_system */ },
     {ATTR_CONFIG, EEPROM, "configuration" /* , can_device::get_instance()->p_config */ },
-    {ATTR_SCHEDULES, EEPROM, "schedules" /* , can_device::get_instance()->p_schedules */ }
+    {ATTR_SCHEDULE, EEPROM, "schedules" /* , can_device::get_instance()->p_schedules */ }
 };
 
 static const struct attribute_t attributes[] PROGMEM = {
@@ -94,9 +94,9 @@ static const struct attribute_t attributes[] PROGMEM = {
 
     {ATTR_CONFIG, 0, 4, ATTR_DEFAULT, "telemetry_period"},
 
-    {ATTR_SCHEDULES, 0, 1, ATTR_DEFAULT, "days"},
-    {ATTR_SCHEDULES, 1, 1, ATTR_DEFAULT, "time"},
-    {ATTR_SCHEDULES, 2, 1, ATTR_DEFAULT, "command"},
+    {ATTR_SCHEDULE, 0, 1, ATTR_DEFAULT, "days"},
+    {ATTR_SCHEDULE, 1, 1, ATTR_DEFAULT, "time"},
+    {ATTR_SCHEDULE, 2, 1, ATTR_DEFAULT, "command"},
 };
 
 /*___________________________________________________________________________*/

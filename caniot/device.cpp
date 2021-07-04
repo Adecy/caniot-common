@@ -57,28 +57,29 @@ void can_device::initialize(void)
 void can_device::process(void)
 {
     // update uptime
-    timer2_uptime(&p_system->uptime);
-    p_system->calculated_abstime = abstime();
+    timer2_uptime(&system.uptime);
+    system.calculated_abstime = abstime();
 
     // calculation of quantities
     // TODO do to it less often
-    p_system->battery = battery();
+    system.battery = battery();
 
-    if (p_config->telemetry_period && (uptime() - p_system->last_telemetry >= p_config->telemetry_period))
+    const uint32_t telemetry_period = config.get_telemetry_period();
+    if (telemetry_period && (uptime() - system.last_telemetry >= telemetry_period))
     {
         SET_FLAG_TELEMETRY(flags);
     }
 
     if (TEST_FLAG_COMMAND(flags))
     {
-        p_system->last_query_error = process_query();
+        system.last_query_error = process_query();
     }
 
     if (TEST_FLAG_TELEMETRY(flags))
     {
         CLEAR_FLAG_TELEMETRY(flags);
 
-        p_system->last_telemetry_error = process_telemetry();
+        system.last_telemetry_error = process_telemetry();
     }
 }
 
@@ -88,7 +89,7 @@ uint8_t can_device::process_query(void)
     if (CAN_MSGAVAIL == p_can->checkReceive())
     {
         p_can->readMsgBufID(&request.id.value, &request.len, request.buffer);
-        p_system->stats.received.total++;
+        system.stats.received.total++;
 
 #if LOG_LEVEL_INFO
         print_can_expl(request);
@@ -105,7 +106,7 @@ uint8_t can_device::process_query(void)
         // success
         if (err == CANIOT_OK)
         {   
-            p_system->stats.received.processed++;
+            system.stats.received.processed++;
             if (request.need_response())
             {
                 err = send_response(response);
@@ -114,7 +115,7 @@ uint8_t can_device::process_query(void)
         else
         {
             // loopback if error
-            p_system->stats.received.query_failed++;
+            system.stats.received.query_failed++;
             if (LOOPBACK_IF_ERR)
             {
                 err = send_response(request);
@@ -150,7 +151,7 @@ uint8_t can_device::process_telemetry(void)
 
     if (nullptr != m_telemetry_builder)
     {
-        p_system->last_telemetry = p_system->uptime;
+        system.last_telemetry = system.uptime;
 
         memset(response.buffer, 0x00, 8);
         err = m_telemetry_builder(response.buffer, response.len);
@@ -159,7 +160,7 @@ uint8_t can_device::process_telemetry(void)
             // length must at least contain the data_type, it may contain more information
             if (response.len >= get_data_type_size((data_type_t)__DEVICE_TYPE__))
             {
-                p_system->stats.sent.telemetry++;
+                system.stats.sent.telemetry++;
 
                 response.id.value = BUILD_ID(type_t::telemetry, query_t::response, controller_t::broadcast, __DEVICE_TYPE__, __DEVICE_ID__);
                 
@@ -206,7 +207,7 @@ uint8_t can_device::dispatch_request(Message &request, Message &response)
         case type_t::command:
         {
             const data_type_t dt = request.get_data_type();
-            if ((dt == p_identification->device.type) && (request.len == get_data_type_size(dt)))
+            if ((dt == identification.device.type) && (request.len == get_data_type_size(dt)))
             {
                 if (m_command_handler != nullptr)
                 {
@@ -214,7 +215,7 @@ uint8_t can_device::dispatch_request(Message &request, Message &response)
                     if (ret == CANIOT_OK)
                     {
                         SET_FLAG_TELEMETRY(flags);
-                        p_system->stats.received.command++;
+                        system.stats.received.command++;
                     }
                 }
                 else
@@ -242,7 +243,7 @@ uint8_t can_device::dispatch_request(Message &request, Message &response)
                     {
                         response.len = 6u;
                         *(key_t *)response.buffer = key; // copy key
-                        p_system->stats.received.read_attribute++;
+                        system.stats.received.read_attribute++;
                     }
                 }
             }
@@ -262,7 +263,7 @@ uint8_t can_device::dispatch_request(Message &request, Message &response)
                         // handle special cases
                         if (key == KEY_ATTR_ABSTIME)
                         {
-                            p_system->uptime_shift = p_system->uptime;
+                            system.uptime_shift = system.uptime;
 #if LOG_LEVEL_DBG
                             usart_printl("upated uptime_shift");
 #endif
@@ -274,7 +275,7 @@ uint8_t can_device::dispatch_request(Message &request, Message &response)
                         {
                             response.len = 6u;
                             *(key_t *)response.buffer = key; // copy key
-                            p_system->stats.received.write_attribute++;
+                            system.stats.received.write_attribute++;
                         }
                     }
                 }
@@ -283,7 +284,7 @@ uint8_t can_device::dispatch_request(Message &request, Message &response)
 
         case type_t::telemetry:
             request_telemetry();
-            p_system->stats.received.request_telemetry++;
+            system.stats.received.request_telemetry++;
             ret = CANIOT_OK;
             break;
             
@@ -301,7 +302,7 @@ uint8_t can_device::send_response(Message &response)
     print_can_expl(response);
 #endif
 
-    p_system->stats.sent.total++;
+    system.stats.sent.total++;
 
     return p_can->sendMsgBuf(response.id.value, CAN_STDID, response.len, response.buffer);
 }
@@ -376,16 +377,16 @@ void *can_device::get_section_address(const uint8_t section)
     switch (section)
     {
     case ATTR_IDENTIFICATION:
-        return p_instance->p_identification;
+        return &p_instance->identification;
 
     case ATTR_SYSTEM:
-        return p_instance->p_system;
+        return &p_instance->system;
 
     case ATTR_CONFIG:
-        return p_instance->p_config;
+        return &p_instance->config.data;
 
-    case ATTR_SCHEDULES:
-        return p_instance->p_schedules;
+    case ATTR_SCHEDULE:
+        return &((config_t*) &p_instance->config.data)->schedule;
 
     default:
         return nullptr;
@@ -458,20 +459,20 @@ const uint8_t can_device::write_attribute(const attr_ref_t *const attr_ref, cons
 void can_device::print_identification(void)
 {
     usart_print("name    = ");
-    usart_printl(p_identification->name);
+    usart_printl(identification.name);
 
     usart_print("id      = ");
-    usart_hex(p_identification->device.id);
+    usart_hex(identification.device.id);
     usart_transmit('\n');
 
     usart_print("type    = ");
-    usart_hex(p_identification->device.type);
+    usart_hex(identification.device.type);
     usart_transmit('\t');
 
-    print_prog_data_type((data_type_t) p_identification->device.type);
+    print_prog_data_type((data_type_t) identification.device.type);
 
     usart_print("\nversion = ");
-    usart_u16(p_identification->version);
+    usart_u16(identification.version);
     usart_transmit('\n');
 }
 

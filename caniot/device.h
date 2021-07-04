@@ -11,6 +11,7 @@
 #include "timer2.h"
 #include "data.h"
 #include "attributes.h"
+#include "config.h"
 
 /*___________________________________________________________________________*/
 
@@ -83,28 +84,11 @@ public:
         uint8_t battery;
     } system_t;
 
-    typedef struct
-    {
-        uint8_t days;
-        uint16_t time;
-        uint8_t state;
-    } schedule_t;
-
-    typedef struct
-    {
-        uint32_t telemetry_period;
-        schedule_t schedules[5];
-    } config_t;
+/*___________________________________________________________________________*/
 
     identification_t identification;
     system_t system;
-
-/*___________________________________________________________________________*/
-
-    identification_t *p_identification = &identification;       // RAM (copied from flash)
-    system_t *p_system = &system;                               // RAM
-    config_t *p_config = 0;                                     // EEPROM
-    schedule_t *p_schedules = (schedule_t*) sizeof(config_t);   // EEPROM
+    Configuration config;       
 
 /*___________________________________________________________________________*/
 
@@ -136,7 +120,7 @@ public:
     command_handler_t m_command_handler;
     telemetry_builder_t m_telemetry_builder;
 
-    uint8_t m_error = CANIOT_ENOINIT;
+    uint8_t m_error = CANIOT_ENOINIT;   // use this error in attributes
 
 /*___________________________________________________________________________*/
 
@@ -158,15 +142,15 @@ public:
         p_instance = this;
 
         // TODO load identification in .initX section
-        memcpy_P(p_identification, (const void*) &__device_identification__, sizeof(identification_t));
+        memcpy_P(&identification, (const void*) &__device_identification__, sizeof(identification_t));
 
-        // copy configuration in eeprom
+        // copy configuration in eeprom if not set
     }
 
     static can_device* get_instance(void) { return p_instance; }
 
-    uint32_t uptime(void) const { return p_system->uptime; }
-    uint32_t abstime(void) const { return p_system->abstime + uptime() - p_system->uptime_shift; }
+    uint32_t uptime(void) const { return system.uptime; }
+    uint32_t abstime(void) const { return system.abstime + uptime() - system.uptime_shift; }
     uint8_t get_error() const { return m_error; }
     void set_command_handler(command_handler_t handler) { m_command_handler = handler; }
     void set_telemetry_builder(telemetry_builder_t builder) { m_telemetry_builder = builder; }
