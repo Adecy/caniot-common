@@ -7,6 +7,24 @@
 
 /*___________________________________________________________________________*/
 
+#ifndef LOG_LEVEL
+#define LOG_LEVEL           3
+#endif
+
+#define LOG_LEVEL_DBG       LOG_LEVEL >= 4
+#define LOG_LEVEL_INFO      LOG_LEVEL >= 3
+#define LOG_LEVEL_WARNING   LOG_LEVEL >= 2
+#define LOG_LEVEL_ERROR     LOG_LEVEL >= 1
+#define LOG_LEVEL_NOTSET    LOG_LEVEL >= 0
+
+/*___________________________________________________________________________*/
+
+#define ARRAY_SIZE(array) (sizeof(array) / sizeof(array[0]))
+#define MAX(a, b) ((a > b) ? (a) : (b))
+#define MIN(a, b) ((a < b) ? (a) : (b))
+
+/*___________________________________________________________________________*/
+
 #define FRAME_COMMAND           0b00
 #define FRAME_TELEMETRY         0b01
 #define FRAME_WRITE_ATTRIBUTE   0b10

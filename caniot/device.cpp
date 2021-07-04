@@ -99,7 +99,7 @@ uint8_t can_device::process_query(void)
         err = dispatch_request(request, response);
 
 #if LOG_LEVEL_DBG
-        usart_u8(err);
+        usart_hex(err);
         usart_printl(" = dispatch_request error");
 #endif
 
@@ -265,7 +265,7 @@ uint8_t can_device::dispatch_request(Message &request, Message &response)
                         {
                             system.uptime_shift = system.uptime;
 #if LOG_LEVEL_DBG
-                            usart_printl("upated uptime_shift");
+                            usart_printl("update uptime_shift");
 #endif
                         }
 
@@ -319,58 +319,6 @@ const uint8_t can_device::battery(void) const
 
 /*___________________________________________________________________________*/
 
-const uint8_t can_device::resolve_attribute(const key_t key, attr_ref_t *const p_attr_ref)
-{
-    if (ATTR_KEY_SECTION(key) < ARRAY_SIZE(attributes_sections))
-    {
-        const section_t *section_p = &attributes_sections[ATTR_KEY_SECTION(key)];
-        uint8_t attr_index = 0;
-        uint8_t offset = 0;
-
-        for (uint_fast8_t i = 0; i < ARRAY_SIZE(attributes); i++)
-        {
-            const uint8_t section = pgm_read_byte(&section_p->section);
-            if (pgm_read_byte(&attributes[i].section) == section)
-            {
-                const uint8_t attr_size = pgm_read_byte(&attributes[i].size);
-                if (attr_index == ATTR_KEY_ATTR(key))
-                {
-                    const uint8_t attr_offset = ATTR_KEY_PART(key) << 2;
-                    if (attr_offset < attr_size)
-                    {
-                        const section_option_t option = (section_option_t)(pgm_read_byte(&section_p->options) |
-                                                                           (pgm_read_byte(&attributes[i].readonly) & READONLY));
-                        // data in RAM
-                        *p_attr_ref = {
-                            section,
-                            option,
-                            (uint8_t) (offset + attr_offset),
-                            (uint8_t) MIN(attr_size - attr_offset, 4),
-                        };
-
-#if LOG_LEVEL_DBG
-                        print_attr_ref(p_attr_ref);
-#endif
-
-                        return CANIOT_OK;
-                    }
-                    else
-                    {
-                        return CANIOT_EKEYPART;
-                    }
-                }
-                else
-                {
-                    offset += attr_size;
-                    attr_index++;
-                }
-            }
-        }
-        return CANIOT_EKEYATTR;
-    }
-    return CANIOT_EKEYSECTION;
-}
-
 // todo shorten this switch with an array of pointers, get rid of nullptr check
 void *can_device::get_section_address(const uint8_t section)
 {
@@ -385,8 +333,8 @@ void *can_device::get_section_address(const uint8_t section)
     case ATTR_CONFIG:
         return &p_instance->config.data;
 
-    case ATTR_SCHEDULE:
-        return &((config_t*) &p_instance->config.data)->schedule;
+    // case ATTR_SCHEDULE:
+    //     return &((config_t*) &p_instance->config.data)->schedule;
 
     default:
         return nullptr;

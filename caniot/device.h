@@ -12,41 +12,13 @@
 #include "data.h"
 #include "attributes.h"
 #include "config.h"
-
-/*___________________________________________________________________________*/
-
-#ifndef LOG_LEVEL
-#define LOG_LEVEL           3
-#endif
-
-#define LOG_LEVEL_DBG       LOG_LEVEL >= 4
-#define LOG_LEVEL_INFO      LOG_LEVEL >= 3
-#define LOG_LEVEL_WARNING   LOG_LEVEL >= 2
-#define LOG_LEVEL_ERROR     LOG_LEVEL >= 1
-#define LOG_LEVEL_NOTSET    LOG_LEVEL >= 0
+#include "types.h"
 
 /*___________________________________________________________________________*/
 
 #define LOOPBACK_IF_ERR 0
 
 #define CANIOT_DRIVER_RETRY_DELAY_MS    1000
-
-/*___________________________________________________________________________*/
-typedef struct // 36 B
-{
-    union
-    {
-        struct
-        {
-            uint8_t id : 3;
-            uint8_t type : 3;
-        } device;
-        uint8_t deviceid;
-    };
-    uint16_t version;
-    char name[32];
-
-} identification_t;
 
 /*___________________________________________________________________________*/
 
@@ -57,32 +29,6 @@ extern identification_t __device_identification__;  // get identification locati
 class can_device
 {
 public:
-    typedef struct 
-    {
-        uint32_t uptime;
-        uint32_t abstime;
-        uint32_t calculated_abstime;
-        uint32_t uptime_shift;
-        uint32_t last_telemetry;
-        struct {
-            struct {
-                uint32_t total;
-                uint32_t read_attribute;
-                uint32_t write_attribute;
-                uint32_t command;
-                uint32_t request_telemetry;
-                uint32_t processed;
-                uint32_t query_failed;
-            } received;
-            struct {
-                uint32_t total;
-                uint32_t telemetry;
-            } sent;
-        } stats;
-        uint8_t last_query_error;
-        uint8_t last_telemetry_error;
-        uint8_t battery;
-    } system_t;
 
 /*___________________________________________________________________________*/
 
@@ -183,7 +129,6 @@ protected:
     static const uint8_t read_attribute(const attr_ref_t *const attr_ref, value_t *const p_value);
     static const uint8_t write_attribute(const attr_ref_t *const attr_ref, const value_t value);
 
-    static const uint8_t resolve_attribute(const key_t key, attr_ref_t *const p_attr_ref);
     static void *get_section_address(const uint8_t section);
 
     void prepare_error(Message &request, const uint8_t errno);

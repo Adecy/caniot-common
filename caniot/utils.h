@@ -2,18 +2,13 @@
 #define _CANIOT_UTILS_
 
 #include <stdint.h>
+#include <stddef.h>
 
 #include <avr/pgmspace.h>
 
 #include "uart.h"
 #include "device.h"
 #include "attributes.h"
-
-/*___________________________________________________________________________*/
-
-#define ARRAY_SIZE(array) (sizeof(array) / sizeof(array[0]))
-#define MAX(a, b) ((a > b) ? (a) : (b))
-#define MIN(a, b) ((a < b) ? (a) : (b))
 
 /*___________________________________________________________________________*/
 

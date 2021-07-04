@@ -9,95 +9,34 @@
 #include <avr/pgmspace.h>
 #include <avr/eeprom.h>
 
-#include <utils.h>
+#include "defines.h"
+#include "types.h"
+#include "config.h"
 
 /*___________________________________________________________________________*/
 
 #define ATTR_IDENTIFICATION 0
 #define ATTR_SYSTEM 1
 #define ATTR_CONFIG 2
-#define ATTR_SCHEDULE 3
 
-#define ATTR_KEY_SECTION(key) (((uint16_t)key) >> 12)
-#define ATTR_KEY_ATTR(key) ((((uint16_t)key) >> 4) & 0xFF)
-#define ATTR_KEY_PART(key) (((uint16_t)key) & 0xF)
+#define ATTR_KEY_SECTION(key) ((uint8_t) (((uint16_t)key) >> 12))
+#define ATTR_KEY_ATTR(key) ((uint8_t) ((((uint16_t)key) >> 4) & 0xFF))
+#define ATTR_KEY_PART(key) ((uint8_t) (((uint16_t)key) & 0xF))
+#define ATTR_KEY_OFFSET(key) (ATTR_KEY_PART(key) << 2)
 
 #define ATTR_KEY(section, attr, part) ((section & 0xF) << 12 | (attr & 0xFF) << 4 | (part & 0xF))
-
-#define ATTR_WRITTABLE 0
-#define ATTR_READONLY 1 << 3
-
-#define ATTR_DEFAULT ATTR_WRITTABLE
 
 /*___________________________________________________________________________*/
 
 typedef enum : uint8_t
 {
+    WRITABLE = 0,
     RAM = 1 << 0,
     EEPROM = 1 << 1,
     PROGMEMORY = 1 << 2,
     READONLY = 1 << 3,
     PRIVATE = 1 << 4, // unimplemented
 } section_option_t;
-
-struct section_t
-{
-    uint8_t section;
-    uint8_t options;
-    char name[15];
-    /* void* p */ ;
-};
-
-struct attribute_t
-{
-    uint8_t section;
-    uint8_t index;
-    uint8_t size;
-    uint8_t readonly;
-    char name[27];
-};
-
-/*___________________________________________________________________________*/
-
-#define KEY_ATTR_ABSTIME ATTR_KEY(ATTR_SYSTEM, 1, 0)
-
-static const struct section_t attributes_sections[] PROGMEM {
-    {ATTR_IDENTIFICATION, RAM | PROGMEMORY | READONLY, "identification" /* , can_device::get_instance()->p_identification */ },
-    {ATTR_SYSTEM, RAM, "system" /* , can_device::get_instance()->p_system */ },
-    {ATTR_CONFIG, EEPROM, "configuration" /* , can_device::get_instance()->p_config */ },
-    {ATTR_SCHEDULE, EEPROM, "schedules" /* , can_device::get_instance()->p_schedules */ }
-};
-
-static const struct attribute_t attributes[] PROGMEM = {
-    {ATTR_IDENTIFICATION, 0, 1, ATTR_DEFAULT, "nodeid"},
-    {ATTR_IDENTIFICATION, 1, 2, ATTR_DEFAULT, "version"},
-    {ATTR_IDENTIFICATION, 2, 32, ATTR_DEFAULT, "name"},
-
-    {ATTR_SYSTEM, 0, 4, ATTR_READONLY, "uptime"},
-    {ATTR_SYSTEM, 1, 4, ATTR_WRITTABLE, "abstime"},
-    {ATTR_SYSTEM, 2, 4, ATTR_READONLY, "calculated_abstime"},
-    {ATTR_SYSTEM, 3, 4, ATTR_READONLY, "uptime_shift"},
-    {ATTR_SYSTEM, 4, 4, ATTR_READONLY, "last_telemetry"},
-
-    {ATTR_SYSTEM, 5, 4, ATTR_READONLY, "received.total"},
-    {ATTR_SYSTEM, 6, 4, ATTR_READONLY, "received.read_attribute"},
-    {ATTR_SYSTEM, 7, 4, ATTR_READONLY, "received.write_attribute"},
-    {ATTR_SYSTEM, 8, 4, ATTR_READONLY, "received.command"},
-    {ATTR_SYSTEM, 9, 4, ATTR_READONLY, "received.request_telemetry"},
-    {ATTR_SYSTEM, 10, 4, ATTR_READONLY, "received.processed"},
-    {ATTR_SYSTEM, 11, 4, ATTR_READONLY, "received.query_failed"},
-    {ATTR_SYSTEM, 12, 4, ATTR_READONLY, "sent.total"},
-    {ATTR_SYSTEM, 13, 4, ATTR_READONLY, "sent.telemetry"},
-    {ATTR_SYSTEM, 14, 1, ATTR_READONLY, "last_query_error"},
-    {ATTR_SYSTEM, 15, 1, ATTR_READONLY, "last_telemetry_error"},
-    {ATTR_SYSTEM, 16, 1, ATTR_READONLY, "battery"},
-
-    {ATTR_CONFIG, 0, 4, ATTR_DEFAULT, "telemetry_period"},
-
-    {ATTR_SCHEDULE, 0, 1, ATTR_DEFAULT, "days"},
-    {ATTR_SCHEDULE, 1, 1, ATTR_DEFAULT, "time"},
-    {ATTR_SCHEDULE, 2, 1, ATTR_DEFAULT, "command"},
-};
 
 /*___________________________________________________________________________*/
 
@@ -120,7 +59,81 @@ typedef struct
 
 /*___________________________________________________________________________*/
 
+struct attribute_t
+{
+    uint8_t offset;
+    uint8_t size;
+    uint8_t readonly;
+    char name[30];
+};
 
+struct section_t
+{
+    uint8_t options;
+    char name[15];
+    const attribute_t * array;
+    uint8_t array_size;
+};
+
+#define ATTRIBUTE(struct, readonly, name, param) \
+    {                                            \
+        (uint8_t) offsetof(struct, param),       \
+            (uint8_t)sizeof(struct ::param),     \
+            (uint8_t)readonly ? READONLY : 0,    \
+            name                                 \
+    }
+
+#define SECTION(options, name, array) \
+    {                                 \
+        options,                      \
+            name,                     \
+            array,                     \
+            ARRAY_SIZE(array)         \
+    }
+
+/*___________________________________________________________________________*/
+
+#define KEY_ATTR_ABSTIME ATTR_KEY(ATTR_SYSTEM, 1, 0)
+
+static const struct attribute_t identification_attr[] PROGMEM = {
+    ATTRIBUTE(identification_t, READONLY, "nodeid", deviceid),
+    ATTRIBUTE(identification_t, READONLY, "version", version),
+    ATTRIBUTE(identification_t, READONLY, "name", name),
+};
+
+static const struct attribute_t system_attr[] PROGMEM = {
+    ATTRIBUTE(system_t, READONLY, "uptime", uptime),
+    ATTRIBUTE(system_t, WRITABLE, "abstime", abstime),
+    ATTRIBUTE(system_t, READONLY, "calculated_abstime", calculated_abstime),
+    ATTRIBUTE(system_t, READONLY, "uptime_shift", uptime_shift),
+    ATTRIBUTE(system_t, READONLY, "last_telemetry", last_telemetry),
+    ATTRIBUTE(system_t, READONLY, "received.total", stats.received.total),
+    ATTRIBUTE(system_t, READONLY, "received.read_attribute", stats.received.read_attribute),
+    ATTRIBUTE(system_t, READONLY, "received.write_attribute", stats.received.write_attribute),
+    ATTRIBUTE(system_t, READONLY, "received.command", stats.received.command),
+    ATTRIBUTE(system_t, READONLY, "received.request_telemetry", stats.received.request_telemetry),
+    ATTRIBUTE(system_t, READONLY, "received.processed", stats.received.processed),
+    ATTRIBUTE(system_t, READONLY, "received.query_failed", stats.received.query_failed),
+    ATTRIBUTE(system_t, READONLY, "sent.total", stats.sent.total),
+    ATTRIBUTE(system_t, READONLY, "sent.telemetry", stats.sent.telemetry),
+    ATTRIBUTE(system_t, READONLY, "last_query_error", last_query_error),
+    ATTRIBUTE(system_t, READONLY, "last_telemetry_error", last_telemetry_error),
+    ATTRIBUTE(system_t, READONLY, "battery", battery),
+};
+
+static const struct attribute_t config_attr[] PROGMEM = {
+    ATTRIBUTE(config_t, WRITABLE, "telemetry_period", telemetry_period),
+};
+
+static const struct section_t attr_sections[] PROGMEM = {
+    SECTION(RAM | PROGMEMORY | READONLY, "identification", identification_attr),
+    SECTION(RAM, "system", system_attr),
+    SECTION(EEPROM, "configuration", config_attr)
+};
+
+/*___________________________________________________________________________*/
+
+const uint8_t resolve_attribute(const key_t key, attr_ref_t *const p_attr_ref);
 
 /*___________________________________________________________________________*/
 
