@@ -25,7 +25,6 @@ const uint8_t resolve_attribute(const key_t key, attr_ref_t *const p_attr_ref)
 #if LOG_LEVEL_DBG
                 print_attr_ref(p_attr_ref);
 #endif
-
                 return CANIOT_OK;
             }
             return CANIOT_EKEYPART;
