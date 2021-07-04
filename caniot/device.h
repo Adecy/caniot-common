@@ -119,18 +119,6 @@ protected:
 
     uint8_t dispatch_request(Message &request, Message &response);
 
-    /**
-     * @brief 
-     * 
-     * @param attr_ref_p in RAM
-     * @param p_value 
-     * @return const uint8_t 
-     */
-    static const uint8_t read_attribute(const attr_ref_t *const attr_ref, value_t *const p_value);
-    static const uint8_t write_attribute(const attr_ref_t *const attr_ref, const value_t value);
-
-    static void *get_section_address(const uint8_t section);
-
     void prepare_error(Message &request, const uint8_t errno);
     uint8_t send_response(Message &response);    
 };

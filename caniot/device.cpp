@@ -235,10 +235,10 @@ uint8_t can_device::dispatch_request(Message &request, Message &response)
             {
                 const key_t key = *(key_t *)request.buffer;
                 attr_ref_t attr_ref;
-                ret = resolve_attribute(key, &attr_ref);
+                ret = Attributes::resolve(key, &attr_ref);
                 if (ret == CANIOT_OK)
                 {
-                    ret = read_attribute(&attr_ref, (value_t *)&response.buffer[2]);
+                    ret = Attributes::read(&attr_ref, (value_t *)&response.buffer[2]);
                     if (ret == CANIOT_OK)
                     {
                         response.len = 6u;
@@ -254,10 +254,10 @@ uint8_t can_device::dispatch_request(Message &request, Message &response)
             {
                 const key_t key = *(key_t *)request.buffer;
                 attr_ref_t attr_ref;
-                ret = resolve_attribute(key, &attr_ref);
+                ret = Attributes::resolve(key, &attr_ref);
                 if (ret == CANIOT_OK)
                 {
-                    ret = write_attribute(&attr_ref, *(value_t *)&request.buffer[2]);
+                    ret = Attributes::write(&attr_ref, *(value_t *)&request.buffer[2]);
                     if (ret == CANIOT_OK)
                     {
                         // handle special cases
@@ -270,7 +270,7 @@ uint8_t can_device::dispatch_request(Message &request, Message &response)
                         }
 
                         // TODO : maybe read is not necessary
-                        ret = read_attribute(&attr_ref, (value_t *)&response.buffer[2]);
+                        ret = Attributes::read(&attr_ref, (value_t *)&response.buffer[2]);
                         if (ret == CANIOT_OK)
                         {
                             response.len = 6u;
@@ -315,91 +315,6 @@ void can_device::request_telemetry(void)
 const uint8_t can_device::battery(void) const
 {
     return MAINS_POWER_SUPPLY;
-}
-
-/*___________________________________________________________________________*/
-
-// todo shorten this switch with an array of pointers, get rid of nullptr check
-void *can_device::get_section_address(const uint8_t section)
-{
-    switch (section)
-    {
-    case ATTR_IDENTIFICATION:
-        return &p_instance->identification;
-
-    case ATTR_SYSTEM:
-        return &p_instance->system;
-
-    case ATTR_CONFIG:
-        return &p_instance->config.data;
-
-    // case ATTR_SCHEDULE:
-    //     return &((config_t*) &p_instance->config.data)->schedule;
-
-    default:
-        return nullptr;
-    }
-}
-
-const uint8_t can_device::read_attribute(const attr_ref_t *const attr_ref, value_t *const p_value)
-{
-    uint8_t err = CANIOT_NULL;
-    if (attr_ref != nullptr)
-    {
-        const void *p = (void *)((uint16_t)get_section_address(attr_ref->section) + attr_ref->offset);
-        if (attr_ref->options & RAM) // priority for RAM
-        {
-            memcpy(p_value, p, attr_ref->read_size);
-        }
-        else if (attr_ref->options & PROGMEMORY)
-        {
-            memcpy_P(p_value, p, attr_ref->read_size);
-        }
-        else if (attr_ref->options & EEPROM)
-        {
-            eeprom_read_block(p_value, p, attr_ref->read_size);
-        }
-        else
-        {
-            return CANIOT_ENIMPL;
-        }
-        err = CANIOT_OK;
-    }
-    return err;
-}
-
-const uint8_t can_device::write_attribute(const attr_ref_t *const attr_ref, const value_t value)
-{
-    uint8_t err = CANIOT_NULL;
-    if (attr_ref != nullptr)
-    {
-        if (attr_ref->options & READONLY)
-        {
-            return CANIOT_EREADONLY;
-        }
-
-        void* p = (void *)((uint16_t)get_section_address(attr_ref->section) + attr_ref->offset);
-        if (attr_ref->options & RAM)
-        {
-            memcpy(p, (void *)&value, attr_ref->read_size);
-        }
-        else if (attr_ref->options & PROGMEMORY)
-        {
-            return CANIOT_EREADONLY;
-        }
-        else if (attr_ref->options & EEPROM)
-        {
-            eeprom_write_block(p, (void *)&value, attr_ref->read_size);
-
-            // warning if many writings
-        }
-        else
-        {
-            return CANIOT_ENIMPL;
-        }
-        err = CANIOT_OK;
-    }
-    return err;
 }
 
 /*___________________________________________________________________________*/
