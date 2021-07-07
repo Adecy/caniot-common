@@ -2,25 +2,26 @@
 
 static const char _usart_alpha16[16] = {'0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'};
 
-inline void _usart_init(const uint8_t baudrate_ubrr)
+inline void _usart_init(const uint16_t baudrate_ubrr)
 {
   // set baud rate (function of oscillator frequency)
-  UBRR0H = (uint8_t) (baudrate_ubrr >> 8);
+  UBRR0H = (uint8_t) (baudrate_ubrr >> 8) & 0xF;
   UBRR0L = (uint8_t) baudrate_ubrr;
 
   // enable receiver and transmitter
-  UCSR0B = (1 << RXEN0) | (1 << TXEN0);
+  UCSR0B = (1 << RXEN0) | (1 << TXEN0) | (1 << RXCIE0);
 
   // USART Control and Status Register n C
   //  - set Asynchronous USART : UMSEL01 = UMSEL00 = 0
   //  - 8 bit format : (3 << UCSZ00)
   //  - configure stop 1 bit : (0<<USBS0)
-  UCSR0C = (0<<USBS0) | (3 << UCSZ00);
+  //  - parity none (0 << UPM01) (if EVEN .pio monitor_flags = --parity E) : https://docs.platformio.org/en/latest/core/userguide/device/cmd_monitor.html#cmd-device-monitor
+	UCSR0C = (0 << UPM01) | (0<<USBS0) | (1 << UCSZ01) | (1 << UCSZ00);
 }
 
 void usart_init()
 {
-  _usart_init(MH16_DEFAULT_BAUDRATE_UBRR);
+  _usart_init(UBRR);
 }
 
 void usart_transmit(char data)
@@ -36,7 +37,7 @@ void usart_transmit(char data)
 
 void usart_send(const char* buffer, size_t len)
 {
-  for(uint_fast16_t i = 0; i < len; i++)
+  for(uint_fast8_t i = 0; i < len; i++)
   {
     usart_transmit(buffer[i]);
   }
@@ -60,13 +61,13 @@ void usart_u8(const uint8_t val)
   usart_transmit(unit);
 }
 
-void usart_u16(uint16_t val)
+void  usart_u16(uint16_t val)
 {
   char digits[5];
 
   uint8_t first_digit = 4u;
 
-  for (uint_fast16_t p = 0; p < 5; p++)
+  for (uint_fast8_t p = 0; p < 5; p++)
   {
     char cur = _usart_alpha16[val % 10];
 

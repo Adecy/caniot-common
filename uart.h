@@ -5,41 +5,39 @@
 
 #include <avr/pgmspace.h>
 #include <avr/io.h>
-
 #include <string.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-// Following constants are calculated for a CPU Clock running at 16MHz
-#ifdef F_CPU
-#define FOSC F_CPU
-#else
-#define FOSC 16000000 
-#endif
+// see datasheet
+// adviced (for 16Mhz): 9600, 38400, 76800, 250k, 500k, 1M
+// not recommended (for 16Mhz) (error rate) : 115200, 230400, 57.6
 
 #define BAUD_9600       9600
 #define BAUD_19200      19200
+#define BAUD_14400      14400
+#define BAUD_19200      19200
+#define BAUD_28800      28800
 #define BAUD_38400      38400
 #define BAUD_57600      57600
+#define BAUD_76800      76800
 #define BAUD_115200     115200
+#define BAUD_230400     230400 
+#define BAUD_250000     250000
+#define BAUD_500000     500000
+#define BAUD_1000000    1000000
+#define BAUDRATE BAUD_250000
 
-// FOSC/16/BAUD - 1 = 103.166 -> 103
-#define MH16_9600_UBRR      103
-#define MH16_19200_UBRR     51
-#define MH16_38400_UBRR     25
-#define MH16_57600_UBRR     16
-#define MH16_115200_UBRR    8   // particular case 
-
-#define MH16_DEFAULT_BAUDRATE_UBRR  MH16_115200_UBRR
+#define UBRR ((F_CPU >> 4) / BAUDRATE) - 1
 
 /**
  * @brief Initiliaze the USART with the baudrate specified as argument
  * 
  * @param baudrate_ubrr 
  */
-void _usart_init(const uint8_t baudrate_ubrr);
+void _usart_init(const uint16_t baudrate_ubrr);
 
 /**
  * @brief Initialize the USART at 115200 bauds/s
