@@ -22,7 +22,7 @@ struct contacts_set_t
     uint8_t c5: 1;
     uint8_t c6: 1;
     uint8_t c7: 1;
-    uint8_t c8s: 1;
+    uint8_t c8: 1;
 };
 
 struct relays_set_t
