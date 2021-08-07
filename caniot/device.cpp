@@ -2,9 +2,32 @@
 
 #include <errno.h>
 
+
+/*___________________________________________________________________________*/
+
+// Set identification at location 0x77dd in flash, at ther very end of the flash (on ATmega328p)
+__attribute__((used, section(".device_identification"))) static const identification_t device_identification = {
+    {
+        __DEVICE_ID__,
+        __DEVICE_TYPE__,
+    },
+    __FIRMWARE_VERSION__,
+    __DEVICE_NAME__,
+};
+
 /*___________________________________________________________________________*/
 
 can_device *can_device::p_instance;
+
+can_device::can_device(mcp2515_can *p_can, uint8_t ext_int_pin, uint32_t speedset, uint8_t clockset) : p_can(p_can), m_ext_int_pin(ext_int_pin), m_speedset(speedset), m_clockset(clockset), flags(0),
+                                                                                                       m_command_handler(nullptr)
+{
+    p_instance = this;
+
+    memcpy_P(&identification, (const void *)&device_identification, sizeof(identification_t));
+
+    // copy configuration in eeprom if not set
+}
 
 /*___________________________________________________________________________*/
 

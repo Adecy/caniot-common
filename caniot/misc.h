@@ -1,5 +1,5 @@
-#ifndef _CANIOT_UTILS_
-#define _CANIOT_UTILS_
+#ifndef _CANIOT_MISC_
+#define _CANIOT_MISC_
 
 #include <stdint.h>
 #include <stddef.h>

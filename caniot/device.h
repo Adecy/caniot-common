@@ -22,10 +22,6 @@
 
 /*___________________________________________________________________________*/
 
-extern identification_t __device_identification__;  // get identification location in FLASH from linker script
-
-/*___________________________________________________________________________*/
-
 class can_device
 {
 public:
@@ -81,17 +77,7 @@ public:
 
     can_device() { };
 
-    can_device(mcp2515_can * p_can, uint8_t ext_int_pin, uint32_t speedset, uint8_t clockset) : 
-    p_can(p_can), m_ext_int_pin(ext_int_pin), m_speedset(speedset), m_clockset(clockset), flags(0),
-    m_command_handler(nullptr)
-    {
-        p_instance = this;
-
-        // TODO load identification in .initX section
-        memcpy_P(&identification, (const void*) &__device_identification__, sizeof(identification_t));
-
-        // copy configuration in eeprom if not set
-    }
+    can_device(mcp2515_can * p_can, uint8_t ext_int_pin, uint32_t speedset, uint8_t clockset);
 
     static can_device* get_instance(void) { return p_instance; }
 
