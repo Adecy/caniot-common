@@ -120,8 +120,10 @@ protected:
         ATTRIBUTE(system_t, READONLY, "received.query_failed", stats.received.query_failed),
         ATTRIBUTE(system_t, READONLY, "sent.total", stats.sent.total),
         ATTRIBUTE(system_t, READONLY, "sent.telemetry", stats.sent.telemetry),
+        ATTRIBUTE(system_t, READONLY, "sent.events", stats.events.total),
         ATTRIBUTE(system_t, READONLY, "last_query_error", last_query_error),
         ATTRIBUTE(system_t, READONLY, "last_telemetry_error", last_telemetry_error),
+        ATTRIBUTE(system_t, READONLY, "last_event_error", last_event_error),
         ATTRIBUTE(system_t, READONLY, "battery", battery),
     };
 

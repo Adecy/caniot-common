@@ -20,8 +20,16 @@
 /*___________________________________________________________________________*/
 
 #define ARRAY_SIZE(array) (sizeof(array) / sizeof(array[0]))
+#define CONTAINER_OF(ptr, type, field) ((type *)(((char *)(ptr)) - offsetof(type, field)))
 #define MAX(a, b) ((a > b) ? (a) : (b))
 #define MIN(a, b) ((a < b) ? (a) : (b))
+
+#define K_SWAP_ENDIANNESS(n) (((((uint16_t)(n) & 0xFF)) << 8) | (((uint16_t)(n) & 0xFF00) >> 8))
+
+#define SET_BIT(x, b)  ((x) |= b)
+#define CLR_BIT(x, b)  ((x) &= (~(b)))
+
+#define ARG_UNUSED(x) (void)(x)
 
 /*___________________________________________________________________________*/
 
@@ -178,10 +186,19 @@ typedef union
 
 #define CANIOT_NULL        0x16
 
+#define CANIOT_EENOCB      0x20         // ERROR no event handler
+#define CANIOT_EECB        0x21         // ERROR ECCB 
+
 #define CANIOT_ENIMPL      0xFE         // ERROR NOT IMPLEMENTED
 
 
 #define CANIOT_ERROR       0xFF         // ANY ERROR + -1
+
+/*___________________________________________________________________________*/
+
+// aliases
+
+// #define CANIOT_NOEVENT     CANIOT_OK
 
 /*___________________________________________________________________________*/
 

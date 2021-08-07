@@ -4,6 +4,7 @@
 
 #include "caniot.h"
 
+#include "tqueue.h"
 #include "misc.h"
 #include "uart.h"
 
@@ -13,6 +14,7 @@
 #include "attributes.h"
 #include "config.h"
 #include "types.h"
+#include "scheduler.h"
 
 /*___________________________________________________________________________*/
 

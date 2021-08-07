@@ -86,6 +86,13 @@ void can_device::process(void)
     // calculation of quantities
     // TODO do to it less often
     system.battery = battery();
+    
+    // if an event append, we execute the handler
+    system.last_event_error = scheduler_process();
+    if (system.last_event_error == CANIOT_OK)
+    {
+        system.stats.events.total++;
+    }
 
     const uint32_t telemetry_period = config.get_telemetry_period();
     if (telemetry_period && (uptime() - system.last_telemetry >= telemetry_period))

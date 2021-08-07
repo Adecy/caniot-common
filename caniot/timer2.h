@@ -10,6 +10,8 @@
 extern "C" {
 #endif
 
+#define TIMER2_PERIOD   10
+
 typedef uint32_t time_cs_t;
 typedef uint32_t time_s_t;
 

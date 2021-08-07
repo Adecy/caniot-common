@@ -1,4 +1,6 @@
 #include "timer2.h"
+#include "scheduler.h"
+#include "tqueue.h"
 
 volatile uint32_t timer2_counter = 0;
 
@@ -6,6 +8,8 @@ volatile uint32_t timer2_counter = 0;
 ISR(TIMER2_OVF_vect)
 {
     TCNT2 = 256 - 156;
+    
+    tqueue_shift(&events_queue, TIMER2_PERIOD);
 
     timer2_counter++;
 }

@@ -44,9 +44,13 @@ typedef struct
             uint32_t total;
             uint32_t telemetry;
         } sent;
+        struct events_t {
+            uint32_t total;
+        } events;
     } stats;
     uint8_t last_query_error;
     uint8_t last_telemetry_error;
+    uint8_t last_event_error;
     uint8_t battery;
 } system_t;
 
