@@ -42,7 +42,7 @@ void tqueue_schedule(struct titem **root, struct titem *item, k_delta_ms_t timeo
     if (item == NULL)
         return;
 
-    item->next = NULL;
+    item->next = NULL;  // necessary if the item is put at the very end of the list
     item->timeout = timeout;
 
     _tqueue_schedule(root, item);
@@ -50,9 +50,6 @@ void tqueue_schedule(struct titem **root, struct titem *item, k_delta_ms_t timeo
 
 void tqueue_shift(struct titem **root, k_delta_ms_t time_passed)
 {
-    if (!time_passed)
-        return;
-
     struct titem ** prev_next_p = root;
     while (*prev_next_p != NULL) // if next of previous item is set
     {
@@ -82,7 +79,6 @@ struct titem * tqueue_pop(struct titem **root)
         item = *root;    // prepare to return it
         *root = (*root)->next;
     }
-    item->next = NULL;
     return item;
 }
 
@@ -95,6 +91,11 @@ void tqueue_remove(struct titem **root, struct titem *item)
         if (p_current == item)
         {
             *prev_next_p = p_current->next;
+            if (p_current->next != NULL)
+            {
+                p_current->next->delay_shift += item->delay_shift;    // add removed item remaining time to the next item if exists
+            }
+            
             item->next = NULL;
             break;
         }
