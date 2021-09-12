@@ -147,8 +147,8 @@ public:
      * @param p_value 
      * @return uint8_t 
      */
-    static const uint8_t read(const attr_ref_t *const attr_ref, value_t *const p_value);
-    static const uint8_t write(const attr_ref_t *const attr_ref, const value_t value);
+    static const uint8_t read(const attr_ref_t *const attr, value_t *const p_value);
+    static const uint8_t write(const attr_ref_t *const attr, const value_t value);
 
     static void *get_section_address(const uint8_t section);
 };
