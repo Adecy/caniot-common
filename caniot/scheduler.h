@@ -1,6 +1,8 @@
 #ifndef _AVRTOS_SCHEDULER
 #define _AVRTOS_SCHEDULER
 
+#include <stdbool.h>
+
 #include "tqueue.h"
 
 /*___________________________________________________________________________*/
@@ -10,17 +12,19 @@ typedef struct
 {
     event_handler_t handler;
     struct titem tie;
+    bool scheduled;
 } event_t;
 
 extern struct titem* events_queue;
 
-#define EVENT_DEFINE_CONTEXT(evname, p_handler) \
+#define EVENT_DEFINE_CONTEXT(evname, p_handler)            \
     event_t evname = {                                     \
         .handler = p_handler,                              \
         .tie = {                                           \
             {.timeout = 0},                                \
             .next = nullptr,                               \
-        }                                                  \
+        },                                                 \
+        .scheduled = false,                                \
     }
 
 /*___________________________________________________________________________*/

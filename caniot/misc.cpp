@@ -105,7 +105,7 @@ void print_can_expl(can_id_t id, const uint8_t* const buffer, const uint8_t len)
 {
     static const char error_frame_msg[] PROGMEM = "Error frame : error = 0x";
     static const char and_broadcast_msg[] PROGMEM = " and BROADCAST : ";
-    static const char with_device_msg[] PROGMEM = " with device D";
+    static const char and_device_msg[] PROGMEM = " and device D";
 
     usart_transmit('[');
     usart_hex16(id.value);
@@ -124,7 +124,7 @@ void print_can_expl(can_id_t id, const uint8_t* const buffer, const uint8_t len)
         if (id.is_broadcast()) {
             usart_print_p(and_broadcast_msg);
         } else {
-            usart_print_p(with_device_msg);
+            usart_print_p(and_device_msg);
             usart_u8(id.bitfields.device_id);
             usart_transmit(' ');
             print_prog_data_type((data_type_t)id.bitfields.device_type);
