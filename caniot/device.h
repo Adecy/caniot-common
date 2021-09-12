@@ -79,7 +79,7 @@ public:
 
     can_device() { };
 
-    can_device(mcp2515_can * p_can, uint8_t ext_int_pin, uint32_t speedset, uint8_t clockset);
+    can_device(mcp2515_can* p_can, uint8_t ext_int_pin, uint32_t speedset, uint8_t clockset);
 
     static can_device* get_instance(void) { return p_instance; }
 

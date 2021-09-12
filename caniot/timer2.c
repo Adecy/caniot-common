@@ -26,10 +26,6 @@ void timer2_init(void)
     // set counter
     TCNT2 = 256 - 156;
 
-    // enable interrupts
-    // SREG |= 1 << SREG_I;
-    // or sei()
-
     // enable interrupt mask, start timer
     TIMSK2 |= 1 << TOIE2;
 }
@@ -37,9 +33,7 @@ void timer2_init(void)
 void timer2_copy_counter(uint32_t *p_copy)
 {
     cli();
-
     *p_copy = timer2_counter;
-
     sei();
 }
 

@@ -202,7 +202,7 @@ typedef union
 
 /*___________________________________________________________________________*/
 
-#define CONFIG_TELEMETRY_DISABLE    0
+#define DEFAULT_TELEMETRY_PERIOD    10*60
 
 #define MAINS_POWER_SUPPLY          0xFF
 

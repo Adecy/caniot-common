@@ -43,22 +43,32 @@ typedef int16_t temperature;
 
 struct CR_t
 {
-    contacts_set_t contacts;
-    relays_set_t relays;
+    struct contacts_set_t contacts;
+    struct relays_set_t relays;
 };
 
-struct CRA_t
+struct __attribute__ ((__packed__)) CRA_t
 {
-    contacts_set_t contacts;
-    relays_set_t relays;
+    struct contacts_set_t contacts;
+    struct relays_set_t relays;
     uint16_t analog: 10;
 };
 
 struct CRT_t
 {
-    contacts_set_t contacts;
-    relays_set_t relays;
+    struct contacts_set_t contacts;
+    struct relays_set_t relays;
     int16_t temperature;
+};
+
+struct __attribute__ ((__packed__)) CRTAAA_t
+{
+    struct contacts_set_t contacts;
+    struct relays_set_t relays;
+    int16_t temperature;
+    uint16_t a1: 10;
+    uint16_t a2: 10;
+    uint16_t a3: 10;
 };
 
 struct TTTT_t
@@ -68,7 +78,7 @@ struct TTTT_t
 
 /*___________________________________________________________________________*/
 
-#define CANIOT_GET_LEN(len , type) (len = get_data_type_size(data_type_t::type))
+#define CANIOT_SET_LEN(len , type) (len = get_data_type_size(data_type_t::type))
 
 /*___________________________________________________________________________*/
 

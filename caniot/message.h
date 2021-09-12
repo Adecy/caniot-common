@@ -27,14 +27,14 @@ public:
         return id.is_broadcast();
     }
 
-    type_t get_type(void) const 
+    type_t get_type(void) const
     {
-        return (type_t) id.bitfields.type;
+        return (type_t)id.bitfields.type;
     }
 
     data_type_t get_data_type(void) const
     {
-        return (data_type_t) id.bitfields.device_type;
+        return (data_type_t)id.bitfields.device_type;
     }
 
     void set_errno(uint8_t errno)
@@ -42,7 +42,6 @@ public:
         len = 1u;
         buffer[0] = errno;
 
-        // correspond to an error frame 
         id.bitfields.query = query_t::response;
         id.bitfields.type = type_t::command;
     }
@@ -50,7 +49,7 @@ public:
     bool need_response(void) const
     {
         return ((id.value & 0b111) != (FRAME_COMMAND | FRAME_QUERY << 2)) &&
-               ((id.value & 0b111) != (FRAME_TELEMETRY | FRAME_QUERY << 2));
+            ((id.value & 0b111) != (FRAME_TELEMETRY | FRAME_QUERY << 2));
     }
 };
 

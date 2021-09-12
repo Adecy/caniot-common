@@ -19,12 +19,21 @@ __attribute__((used, section(".device_identification"))) static const identifica
 
 can_device *can_device::p_instance;
 
-can_device::can_device(mcp2515_can *p_can, uint8_t ext_int_pin, uint32_t speedset, uint8_t clockset) : p_can(p_can), m_ext_int_pin(ext_int_pin), m_speedset(speedset), m_clockset(clockset), flags(0),
-                                                                                                       m_command_handler(nullptr)
+can_device::can_device(
+    mcp2515_can *p_can,
+    uint8_t ext_int_pin,
+    uint32_t speedset,
+    uint8_t clockset) : p_can(p_can),
+                        m_ext_int_pin(ext_int_pin),
+                        m_speedset(speedset),
+                        m_clockset(clockset),
+                        flags(0),
+                        m_command_handler(nullptr)
 {
     p_instance = this;
 
-    memcpy_P(&identification, (const void *)&device_identification, sizeof(identification_t));
+    memcpy_P(&identification,
+             (const void *)&device_identification, sizeof(identification_t));
 
     // copy configuration in eeprom if not set
 }
@@ -58,7 +67,7 @@ void can_device::initialize(void)
     err |= p_can->init_Filt(4, CAN_STDID, DEVICE_RXF4);
     err |= p_can->init_Filt(5, CAN_STDID, DEVICE_RXF5);
 
-    if (err != CANIOT_OK)
+    if (err != MCP2515_OK)
     {
         static const char failed_init[] PROGMEM = "failed to initialize mcp2515";
         usart_printl_p(failed_init);
@@ -179,10 +188,9 @@ uint8_t can_device::process_telemetry(void)
 {
     uint8_t err = CAN_OK;
 
+    system.last_telemetry = system.uptime;
     if (nullptr != m_telemetry_builder)
     {
-        system.last_telemetry = system.uptime;
-
         memset(response.buffer, 0x00, 8);
         err = m_telemetry_builder(response.buffer, response.len);
         if (err == CANIOT_OK)
@@ -237,7 +245,7 @@ uint8_t can_device::dispatch_request(Message &request, Message &response)
         case type_t::command:
         {
             const data_type_t dt = request.get_data_type();
-            if ((dt == identification.device.type) && (request.len == get_data_type_size(dt)))
+            if ((dt == identification.device.type)) /* && (request.len == get_data_type_size(dt)) */
             {
                 if (m_command_handler != nullptr)
                 {

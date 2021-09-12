@@ -1,7 +1,11 @@
 #ifndef _AVRTOS_TQUEUE_H
 #define _AVRTOS_TQUEUE_H
 
-#include "../defines.h"
+#include <stdint.h>
+#include <stddef.h>
+
+typedef uint32_t k_delta_ms_t;
+typedef k_delta_ms_t timeout_t;
 
 #ifdef __cplusplus
 extern "C" {

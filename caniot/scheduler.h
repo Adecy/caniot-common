@@ -5,7 +5,7 @@
 
 /*___________________________________________________________________________*/
 
-typedef uint8_t (*event_handler_t)(void *);
+typedef uint8_t(*event_handler_t)(void*);
 typedef struct
 {
     event_handler_t handler;
@@ -27,9 +27,9 @@ extern struct titem* events_queue;
 
 #ifdef __cplusplus
 
-void schedule(event_t &event, timeout_t timeout);
+void schedule(event_t& event, timeout_t timeout);
 
-void unschedule(event_t &event);
+void unschedule(event_t& event);
 
 uint8_t scheduler_process(void);
 

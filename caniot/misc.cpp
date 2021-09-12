@@ -9,7 +9,7 @@ static const char caniot_msg_types[] PROGMEM = {
     "Telemetry\0"
     "Write-Attribute\0"
     "Read-Attribute\0"
-    "\0" // two EOS to tell "print_prog_string" its the end of the array
+    "\0" /* two EOS to tell "print_prog_string" its the end of the array */
 };
 
 static const char caniot_msg_query_resp[] PROGMEM = {
@@ -43,22 +43,17 @@ void print_prog_string(PGM_P const pgm_string_array, const uint8_t elem)
     uint8_t index = 0;
     PGM_P pos = pgm_string_array;
 
-    while(true)
-    {
-        if (index == elem)
-        {
+    while (true) {
+        if (index == elem) {
             usart_print_p(pos);
             return;
-        }
-        else
-        {
+        } else {
             const size_t len = strlen_P(pos);
 
-            if (len == 0)
-            {
+            if (len == 0) {
                 return;
             }
-            
+
             pos += len + 1;
             index++;
         }
@@ -67,130 +62,130 @@ void print_prog_string(PGM_P const pgm_string_array, const uint8_t elem)
 
 void print_prog_type(const type_t type)
 {
-    print_prog_string(caniot_msg_types, (uint8_t) type);
+    print_prog_string(caniot_msg_types, (uint8_t)type);
 }
 
 void print_prog_query(const query_t qr)
 {
-    print_prog_string(caniot_msg_query_resp, (uint8_t) qr);
+    print_prog_string(caniot_msg_query_resp, (uint8_t)qr);
 }
 
 void print_prog_data_type(const data_type_t dt)
 {
-    print_prog_string(caniot_msg_data_frame_types, (uint8_t) dt);
+    print_prog_string(caniot_msg_data_frame_types, (uint8_t)dt);
 }
 
 void print_prog_controller(const controller_t ctrl)
 {
-    print_prog_string(caniot_msg_controllers, (uint8_t) ctrl);
+    print_prog_string(caniot_msg_controllers, (uint8_t)ctrl);
 }
 
 static const char msg_can_recv_from[] PROGMEM = "CAN message received from ";
 static const char msg_can_send_between[] PROGMEM = " CAN message send between ";
 
 
-void print_can(const unsigned long id, const uint8_t * const buffer, const uint8_t len)
+void print_can(const unsigned long id, const uint8_t* const buffer, const uint8_t len)
 {
     usart_print_p(msg_can_recv_from);
-
     usart_hex16(id);
-
     usart_print(" : ");
-
-    for(uint_fast8_t i = 0; i < len; i++)
-    {
+    for (uint_fast8_t i = 0; i < len; i++) {
         usart_hex(buffer[i]);
         usart_transmit(' ');
     }
     usart_transmit('\n');
 }
 
-void print_can_expl(Message &can_msg)
+void print_can_expl(Message& can_msg)
 {
     print_can_expl(can_msg.id, can_msg.buffer, can_msg.len);
 }
 
-void print_can_expl(can_id_t id, const uint8_t * const buffer, const uint8_t len)
+void print_can_expl(can_id_t id, const uint8_t* const buffer, const uint8_t len)
 {
+    static const char error_frame_msg[] PROGMEM = "Error frame : error = 0x";
+    static const char and_broadcast_msg[] PROGMEM = " and BROADCAST : ";
+    static const char with_device_msg[] PROGMEM = " with device D";
+
     usart_transmit('[');
     usart_hex16(id.value);
     usart_print("] ");
-    
-    // todo here
-    if (id.is_error())
-    {
-        usart_print("Error frame : error = 0x");
+
+    if (id.is_error()) {
+        usart_print_p(error_frame_msg);
         usart_hex(buffer[0]);
-    }
-    else
-    {
+    } else {
         print_prog_query((query_t)id.bitfields.query);
-
         usart_transmit(' ');
-
         print_prog_type((type_t)id.bitfields.type);
-
         usart_print_p(msg_can_send_between);
-
         print_prog_controller((controller_t)id.bitfields.controller);
 
-        if (id.is_broadcast())
-        {
-            usart_print(" and BROADCAST : ");
-        }
-        else
-        {
-            usart_print(" to device D");
+        if (id.is_broadcast()) {
+            usart_print_p(and_broadcast_msg);
+        } else {
+            usart_print_p(with_device_msg);
             usart_u8(id.bitfields.device_id);
             usart_transmit(' ');
             print_prog_data_type((data_type_t)id.bitfields.device_type);
             usart_print(" : ");
         }
 
-        for (uint_fast8_t i = 0; i < len; i++)
-        {
+        for (uint_fast8_t i = 0; i < len; i++) {
             usart_hex(buffer[i]);
             usart_transmit(' ');
         }
     }
-
     usart_transmit('\n');
 }
 
 void print_time_sec(uint32_t time_sec)
 {
-    usart_print("uptime : ");
+    static const char uptime_msg[] = "uptime : ";
+    static const char seconds_msg[] = " seconds";
+    usart_print_p(uptime_msg);
     usart_u16(time_sec);
-    usart_printl(" seconds");
+    usart_print_p(seconds_msg);
 }
 
 /*___________________________________________________________________________*/
 
 void debug_masks_filters(void)
 {
-    // setup masks
-    usart_print("DEVICE_RXM0 ");
+    static const char msg[] PROGMEM = "DEVICE_RX";
+
+#define PRINT_PGM_DEVICE_RX_MSG() usart_print_p(msg)
+
+    PRINT_PGM_DEVICE_RX_MSG();
+    usart_print("M0 ");
     usart_hex16(DEVICE_RXM0);
     usart_transmit('\n');
-    usart_print("DEVICE_RXF0 ");
+    PRINT_PGM_DEVICE_RX_MSG();
+    usart_print("F0 ");
     usart_hex16(DEVICE_RXF0);
     usart_transmit('\n');
-    usart_print("DEVICE_RXF1 ");
+    PRINT_PGM_DEVICE_RX_MSG();
+    usart_print("F1 ");
     usart_hex16(DEVICE_RXF1);
     usart_transmit('\n');
-    usart_print("DEVICE_RXM1 ");
+    PRINT_PGM_DEVICE_RX_MSG();
+    usart_print("M1 ");
     usart_hex16(DEVICE_RXM1);
     usart_transmit('\n');
-    usart_print("DEVICE_RXF2 ");
+    PRINT_PGM_DEVICE_RX_MSG();
+    usart_print("F2 ");
     usart_hex16(DEVICE_RXF2);
     usart_transmit('\n');
-    usart_print("DEVICE_RXF3 ");
+    PRINT_PGM_DEVICE_RX_MSG();
+    usart_print("F3 ");
     usart_hex16(DEVICE_RXF3);
     usart_transmit('\n');
-    usart_print("DEVICE_RXF4 ");
+    PRINT_PGM_DEVICE_RX_MSG();
+    usart_print("F4 ");
     usart_hex16(DEVICE_RXF4);
     usart_transmit('\n');
-    usart_print("DEVICE_RXF5 ");
+    PRINT_PGM_DEVICE_RX_MSG();
+    usart_print("F5 ");
     usart_hex16(DEVICE_RXF5);
     usart_transmit('\n');
 }
