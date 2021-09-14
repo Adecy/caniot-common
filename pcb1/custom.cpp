@@ -44,6 +44,13 @@ void CustomBoard::initialize(void)
     io_init();
     usart_init();
 
+    /* in sleep mode "power save" the device can be awakaned
+     * by an interrupts on several peripherals :
+     * timer2 interrupts, int0/int1, and more...
+     * - see ATmega328p datasheet Table 10-1.
+     */
+    SMCR = SLEEP_MODE_PWR_SAVE; // this is an atomic write
+
     can_device::initialize();    
 }
 
