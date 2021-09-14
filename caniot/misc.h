@@ -41,5 +41,10 @@ void debug_masks_filters(void);
  */
 void print_attr_ref(attr_ref_t* attr_ref_p);
 
+/*___________________________________________________________________________*/
+
+void print_caniot_error(uint8_t err);
+
+/*___________________________________________________________________________*/
 
 #endif

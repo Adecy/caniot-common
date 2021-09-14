@@ -208,3 +208,46 @@ void print_attr_ref(attr_ref_t* attr_ref_p)
 }
 
 /*___________________________________________________________________________*/
+
+#define CANIOT_ERROR_STR(err, name) {err, name}
+static const struct {
+    uint8_t err;
+    char name[sizeof("EKEYSECTION")];
+} errors_str[] PROGMEM = {
+    CANIOT_ERROR_STR(CANIOT_OK, "OK"),
+    CANIOT_ERROR_STR(CANIOT_ENPROC, "ENPROC"),
+    CANIOT_ERROR_STR(CANIOT_ECMD, "ECMD"),
+    CANIOT_ERROR_STR(CANIOT_EKEY, "EKEY"),
+    CANIOT_ERROR_STR(CANIOT_ETIMEOUT, "ETIMEOUT"),
+    CANIOT_ERROR_STR(CANIOT_EBUSY, "EBUSY"),
+    CANIOT_ERROR_STR(CANIOT_EFMT, "EFMT"),
+    CANIOT_ERROR_STR(CANIOT_EHANDLERC, "EHANDLERC"),
+    CANIOT_ERROR_STR(CANIOT_EHANDLERT, "EHANDLERT"),
+    CANIOT_ERROR_STR(CANIOT_ETELEMETRY, "ETELEMETRY"),
+    CANIOT_ERROR_STR(CANIOT_ENOINIT, "ENOINIT"),
+    CANIOT_ERROR_STR(CANIOT_EDRIVER, "EDRIVER"),
+    CANIOT_ERROR_STR(CANIOT_EKEYSECTION, "EKEYSECTION"),
+    CANIOT_ERROR_STR(CANIOT_EKEYATTR, "EKEYATTR"),
+    CANIOT_ERROR_STR(CANIOT_EKEYPART, "EKEYPART"),
+    CANIOT_ERROR_STR(CANIOT_EREADONLY, "EREADONLY"),
+    CANIOT_ERROR_STR(CANIOT_ENULL, "ENULL"),
+    CANIOT_ERROR_STR(CANIOT_EREADATTR, "EREADATTR"),
+    CANIOT_ERROR_STR(CANIOT_EWRITEATTR, "EWRITEATTR"),
+    CANIOT_ERROR_STR(CANIOT_EENOCB, "EENOCB"),
+    CANIOT_ERROR_STR(CANIOT_EECB, "EECB"),
+    CANIOT_ERROR_STR(CANIOT_ENIMPL, "ENIMPL"),
+    CANIOT_ERROR_STR(CANIOT_EUNDEF, "EUNDEF"),
+};
+
+void print_caniot_error(uint8_t err)
+{
+    for (uint_fast8_t i = 0; i < ARRAY_SIZE(errors_str); i++) {
+        if ((uint8_t) pgm_read_byte(&errors_str[i].err) == err) {
+            PRINT_PROGMEM_STRING(caniot_str, "CANIOT_");
+            usart_print_p(errors_str[i].name);
+            break;
+        }
+    }
+}
+
+/*___________________________________________________________________________*/

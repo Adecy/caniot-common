@@ -79,7 +79,7 @@ void* Attributes::get_section_address(const uint8_t section)
 
 const uint8_t Attributes::read(const attr_ref_t* const attr, value_t* const p_value)
 {
-    uint8_t err = CANIOT_NULL;
+    uint8_t err = CANIOT_ENULL;
     if (attr != nullptr) {
         const void* p = (void*)(
             (uint16_t)get_section_address(attr->section) + attr->offset);
@@ -101,7 +101,7 @@ const uint8_t Attributes::read(const attr_ref_t* const attr, value_t* const p_va
 const uint8_t Attributes::write(const attr_ref_t* const attr, const value_t value)
 {
     if (attr == nullptr) {
-        return CANIOT_NULL;
+        return CANIOT_ENULL;
     }
 
     if (attr->options & READONLY) {

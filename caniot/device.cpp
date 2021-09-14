@@ -69,8 +69,7 @@ void can_device::initialize(void)
 
     if (err != MCP2515_OK)
     {
-        static const char failed_init[] PROGMEM = "failed to initialize mcp2515";
-        usart_printl_p(failed_init);
+        PRINT_PROGMEM_STRING(failed_init_str, "failed to initialize mcp2515\n");
 
         m_error = CANIOT_EDRIVER;
 
@@ -128,7 +127,6 @@ uint8_t can_device::process_query(void)
         print_can_expl(request);
 #endif
 
-        response.clear();
         err = dispatch_request(request, response);
 
 #if LOG_LEVEL_DBG
@@ -158,8 +156,10 @@ uint8_t can_device::process_query(void)
 
 #if LOG_LEVEL_ERROR
     if (err != CANIOT_OK) {
-        usart_print("Error command handling : ");
+        PRINT_PROGMEM_STRING(error_cmd_str, "Error command handling : 0x");
         usart_hex(err);
+        usart_print(" = ");
+        print_caniot_error(err);
         usart_transmit('\n');
     }
 #endif
@@ -176,7 +176,7 @@ uint8_t can_device::process_telemetry(void)
     }
 
     response.clear();
-    
+
     uint8_t err = m_telemetry_builder(response.buffer, response.len);
     if (err == CANIOT_OK) {
         /* length must at least contain the data_type,
@@ -207,9 +207,8 @@ uint8_t can_device::dispatch_request(Message &request, Message &response)
         return CANIOT_ENPROC;
     }
 
-    response.id.value = request.id.value;
+    response.clear();
     response.id.bitfields.query = query_t::response;
-    response.len = 0u;
 
     uint8_t ret = CANIOT_ENPROC;
     switch (request.get_type()) {
@@ -341,20 +340,20 @@ const uint8_t can_device::battery(void) const
 
 void can_device::print_identification(void)
 {
-    usart_print("name    = ");
+    PRINT_PROGMEM_STRING(name_str, "name    = ");
     usart_printl(identification.name);
 
-    usart_print("id      = ");
+    PRINT_PROGMEM_STRING(id_str, "id      = ");
     usart_hex(identification.device.id);
     usart_transmit('\n');
 
-    usart_print("type    = ");
+    PRINT_PROGMEM_STRING(type_str, "type    = ");
     usart_hex(identification.device.type);
     usart_transmit('\t');
 
     print_prog_data_type((data_type_t) identification.device.type);
 
-    usart_print("\nversion = ");
+    PRINT_PROGMEM_STRING(version_str, "\nversion = ");
     usart_u16(identification.version);
     usart_transmit('\n');
 }

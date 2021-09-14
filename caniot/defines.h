@@ -31,6 +31,13 @@
 
 #define ARG_UNUSED(x) (void)(x)
 
+#define PROGMEM_STRING(name, string)            \
+    static const char name[] PROGMEM = string;
+
+#define PRINT_PROGMEM_STRING(name, string)      \
+    static const char name[] PROGMEM = string;  \
+    usart_print_p(name);
+
 /*___________________________________________________________________________*/
 
 #define FRAME_COMMAND           0b00
@@ -185,7 +192,7 @@ typedef union
 
 #define CANIOT_EREADONLY   0x15
 
-#define CANIOT_NULL        0x16
+#define CANIOT_ENULL        0x16
 
 #define CANIOT_EREADATTR   0x17         // ERROR QUERY READ ATTR
 #define CANIOT_EWRITEATTR  0x18         // ERROR QUERY WRITE ATTR
@@ -196,7 +203,7 @@ typedef union
 #define CANIOT_ENIMPL      0xFE         // ERROR NOT IMPLEMENTED
 
 
-#define CANIOT_ERROR       0xFF         // ANY ERROR + -1
+#define CANIOT_EUNDEF       0xFF         // ANY ERROR + -1
 
 /*___________________________________________________________________________*/
 
