@@ -12,9 +12,7 @@ public:
 
     Message(void)
     {
-        id.value = 0;
-        len = 0;
-        memset(buffer, 0x00, sizeof(buffer));
+        clear();
     }
 
     bool is_query(void)
@@ -50,6 +48,13 @@ public:
     {
         return ((id.value & 0b111) != (FRAME_COMMAND | FRAME_QUERY << 2)) &&
             ((id.value & 0b111) != (FRAME_TELEMETRY | FRAME_QUERY << 2));
+    }
+
+    void clear(void) 
+    {
+        len = 0;
+        memset(&id, 0x00, sizeof(can_id_t));
+        memset(buffer, 0x00, sizeof(buffer));
     }
 };
 

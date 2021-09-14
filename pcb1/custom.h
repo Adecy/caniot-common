@@ -20,6 +20,29 @@
 
 /*___________________________________________________________________________*/
 
+#define IN0     0
+#define IN1     1
+#define IN2     2
+#define IN3     3
+
+#define IN0_PORT     PIND3
+#define IN1_PORT     PIND4
+#define IN2_PORT     PIND5
+#define IN3_PORT     PIND6
+
+union inputs
+{
+    struct {
+        uint8_t in0 : 1;
+        uint8_t in1 : 1;
+        uint8_t in2 : 1;
+        uint8_t in3 : 1;
+    };
+    uint8_t ins;
+};
+
+/*___________________________________________________________________________*/
+
 class CustomBoard : public can_device
 {
 protected:
@@ -30,8 +53,9 @@ public:
         can_device(&can, CAN_INT_PIN, CAN_SPEED, MCP_16MHz) { }
 
     void initialize(void);
-
-    int16_t read_temperature(void);
+    
+    static uint8_t read_inputs(void);
+    static int16_t read_temperature(void);
 
 protected:
     void io_init(void);

@@ -143,7 +143,8 @@ typedef union
 
 /*___________________________________________________________________________*/
 
-#define BUILD_ID(type, qr, controller, devicetype, deviceid) (type | qr << 2 | controller << 3 | devicetype << 5 | deviceid << 8)
+#define BUILD_ID(type, qr, controller, devicetype, deviceid) \
+    (type | qr << 2 | controller << 3 | devicetype << 5 | deviceid << 8)
 
 /*___________________________________________________________________________*/
 
@@ -185,6 +186,9 @@ typedef union
 #define CANIOT_EREADONLY   0x15
 
 #define CANIOT_NULL        0x16
+
+#define CANIOT_EREADATTR   0x17         // ERROR QUERY READ ATTR
+#define CANIOT_EWRITEATTR  0x18         // ERROR QUERY WRITE ATTR
 
 #define CANIOT_EENOCB      0x20         // ERROR no event handler
 #define CANIOT_EECB        0x21         // ERROR ECCB 

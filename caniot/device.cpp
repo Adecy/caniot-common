@@ -92,32 +92,27 @@ void can_device::process(void)
     timer2_uptime(&system.uptime);
     system.calculated_abstime = abstime();
 
-    // calculation of quantities
-    // TODO do to it less often
+    /* calculation of quantities */
     system.battery = battery();
     
-    // if an event append, we execute the handler
+    /* if an event occured, we execute the handler */
     system.last_event_error = scheduler_process();
-    if (system.last_event_error == CANIOT_OK)
-    {
+    if (system.last_event_error == CANIOT_OK) {
         system.stats.events.total++;
     }
 
     const uint32_t telemetry_period = config.get_telemetry_period();
-    if (telemetry_period && (uptime() - system.last_telemetry >= telemetry_period))
-    {
+    if (telemetry_period && (uptime() -
+        system.last_telemetry >= telemetry_period)) {
         SET_FLAG_TELEMETRY(flags);
     }
 
-    if (TEST_FLAG_COMMAND(flags))
-    {
+    if (TEST_FLAG_COMMAND(flags)) {
         system.last_query_error = process_query();
     }
 
-    if (TEST_FLAG_TELEMETRY(flags))
-    {
+    if (TEST_FLAG_TELEMETRY(flags)) {
         CLEAR_FLAG_TELEMETRY(flags);
-
         system.last_telemetry_error = process_telemetry();
     }
 }
@@ -125,8 +120,7 @@ void can_device::process(void)
 uint8_t can_device::process_query(void)
 {
     uint8_t err = CAN_OK;
-    if (CAN_MSGAVAIL == p_can->checkReceive())
-    {
+    if (CAN_MSGAVAIL == p_can->checkReceive()) {
         p_can->readMsgBufID(&request.id.value, &request.len, request.buffer);
         system.stats.received.total++;
 
@@ -134,7 +128,7 @@ uint8_t can_device::process_query(void)
         print_can_expl(request);
 #endif
 
-        memset(response.buffer, 0x00, 8);
+        response.clear();
         err = dispatch_request(request, response);
 
 #if LOG_LEVEL_DBG
@@ -142,39 +136,28 @@ uint8_t can_device::process_query(void)
         usart_printl(" = dispatch_request error");
 #endif
 
-        // success
-        if (err == CANIOT_OK)
-        {   
+        if (err == CANIOT_OK) {
             system.stats.received.processed++;
-            if (request.need_response())
-            {
+            if (request.need_response()) {
                 err = send_response(response);
             }
-        } 
-        else
-        {
-            // loopback if error
+        } else {
             system.stats.received.query_failed++;
-            if (LOOPBACK_IF_ERR)
-            {
+
+            /* if loopback on error is enabled */
+            if (LOOPBACK_IF_ERR) {
                 err = send_response(request);
-            }
-            else // return error frame
-            {
+            } else {
                 response.set_errno(err);
                 err = send_response(response);
             }
         }
-    }
-    else
-    {
+    } else {
         CLEAR_FLAG_COMMAND(flags);
     }
 
 #if LOG_LEVEL_ERROR
-    // handle errors
-    if (err != CANIOT_OK)
-    {
+    if (err != CANIOT_OK) {
         usart_print("Error command handling : ");
         usart_hex(err);
         usart_transmit('\n');
@@ -186,153 +169,156 @@ uint8_t can_device::process_query(void)
 
 uint8_t can_device::process_telemetry(void)
 {
-    uint8_t err = CAN_OK;
-
     system.last_telemetry = system.uptime;
-    if (nullptr != m_telemetry_builder)
-    {
-        memset(response.buffer, 0x00, 8);
-        err = m_telemetry_builder(response.buffer, response.len);
-        if (err == CANIOT_OK)
-        {
-            // length must at least contain the data_type, it may contain more information
-            if (response.len >= get_data_type_size((data_type_t)__DEVICE_TYPE__))
-            {
-                system.stats.sent.telemetry++;
 
-                response.id.value = BUILD_ID(type_t::telemetry, query_t::response, controller_t::broadcast, __DEVICE_TYPE__, __DEVICE_ID__);
-                
-                err = send_response(response);
-            }
-            else
-            {
-                // error failed to send telemetry message
-                err = CANIOT_ETELEMETRY;
+    if (m_telemetry_builder == nullptr) {
+        return CANIOT_EHANDLERT;
+    }
 
-                // don't retry immediately (can cause loop)
-            }
+    response.clear();
+    
+    uint8_t err = m_telemetry_builder(response.buffer, response.len);
+    if (err == CANIOT_OK) {
+        /* length must at least contain the data_type,
+         * it may contain more information
+         */
+        if (response.len >= get_data_type_size((data_type_t)__DEVICE_TYPE__)) {
+
+            /* prepare response */
+            system.stats.sent.telemetry++;
+            response.id.value = BUILD_ID(
+                type_t::telemetry,
+                query_t::response,
+                controller_t::broadcast,
+                __DEVICE_TYPE__,
+                __DEVICE_ID__);
+
+            err = send_response(response);
+        } else {
+            err = CANIOT_ETELEMETRY;
         }
     }
-    else
-    {
-        err = CANIOT_EHANDLERT;
-    }
-
-#if LOG_LEVEL_ERROR
-    // handle errors
-    if (err != CANIOT_OK)
-    {
-        usart_print("Error telemetry : ");
-        usart_hex(err);
-        usart_transmit('\n');
-    }
-#endif
-
     return err;
 }
 
 uint8_t can_device::dispatch_request(Message &request, Message &response)
-{
-    uint8_t ret = CANIOT_ENPROC;
-    if (request.is_query())
-    {
-        response.id.value = request.id.value;
-        response.id.bitfields.query = query_t::response;
-        response.len = 0u;  // default len
+{   
+    if (!request.is_query()) {
+        return CANIOT_ENPROC;
+    }
 
-        switch (request.get_type())
-        {
-        case type_t::command:
-        {
-            const data_type_t dt = request.get_data_type();
-            if ((dt == identification.device.type)) /* && (request.len == get_data_type_size(dt)) */
-            {
-                if (m_command_handler != nullptr)
-                {
-                    ret = m_command_handler(request.buffer, request.len);
-                    if (ret == CANIOT_OK)
-                    {
-                        SET_FLAG_TELEMETRY(flags);
-                        system.stats.received.command++;
-                    }
-                }
-                else
-                {
-                    ret = CANIOT_EHANDLERC;
-                }
-            }
-            else
-            {
-                ret = CANIOT_ECMD;
-            }
-        }
+    response.id.value = request.id.value;
+    response.id.bitfields.query = query_t::response;
+    response.len = 0u;
+
+    uint8_t ret = CANIOT_ENPROC;
+    switch (request.get_type()) {
+    case type_t::command:
+        ret = handle_command(request);
         break;
 
-        case type_t::read_attribute:
-            if (request.len == 2u)
-            {
-                const key_t key = *(key_t *)request.buffer;
-                attr_ref_t attr_ref;
-                ret = Attributes::resolve(key, &attr_ref);
-                if (ret == CANIOT_OK)
-                {
-                    ret = Attributes::read(&attr_ref, (value_t *)&response.buffer[2]);
-                    if (ret == CANIOT_OK)
-                    {
-                        response.len = 6u;
-                        *(key_t *)response.buffer = key; // copy key
-                        system.stats.received.read_attribute++;
-                    }
-                }
-            }
-            break;
+    case type_t::read_attribute:
+        ret = handle_read_attribute(request, response);
+        break;
 
-        case type_t::write_attribute:
-            if ((request.len >= 3) && (request.len <= 6))
-            {
-                const key_t key = *(key_t *)request.buffer;
-                attr_ref_t attr_ref;
-                ret = Attributes::resolve(key, &attr_ref);
-                if (ret == CANIOT_OK)
-                {
-                    ret = Attributes::write(&attr_ref, *(value_t *)&request.buffer[2]);
-                    if (ret == CANIOT_OK)
-                    {
-                        // handle special cases
-                        if (key == KEY_ATTR_ABSTIME)
-                        {
-                            system.uptime_shift = system.uptime;
-#if LOG_LEVEL_DBG
-                            usart_printl("update uptime_shift");
-#endif
-                        }
+    case type_t::write_attribute:
+        ret = handle_write_attribute(request, response);
+        break;
 
-                        // TODO : maybe read is not necessary
-                        ret = Attributes::read(&attr_ref, (value_t *)&response.buffer[2]);
-                        if (ret == CANIOT_OK)
-                        {
-                            response.len = 6u;
-                            *(key_t *)response.buffer = key; // copy key
-                            system.stats.received.write_attribute++;
-                        }
-                    }
-                }
-            }
-            break;
+    case type_t::telemetry:
+        ret = handle_request_telemetry();
+        break;
+    }
 
-        case type_t::telemetry:
-            request_telemetry();
-            system.stats.received.request_telemetry++;
-            ret = CANIOT_OK;
-            break;
-            
-        default:
-            ret = CANIOT_ENPROC; // error unprocessable request type
+    return ret;
+}
+
+uint8_t can_device::handle_command(Message &request)
+{
+    /* check command data type
+     * TODO : remove because unecessary
+     */
+    if (request.get_data_type() != (data_type_t)__DEVICE_TYPE__) {
+        return CANIOT_ECMD;
+    }
+
+    /* if an handler is defined */
+    if (m_command_handler == nullptr) {
+        return CANIOT_EHANDLERC;
+    }
+
+    /* call handler and request telemetry response if success */
+    uint8_t ret = m_command_handler(request.buffer, request.len);
+    if (ret == CANIOT_OK) {
+        SET_FLAG_TELEMETRY(flags);
+        system.stats.received.command++;
+    }
+
+    return ret;
+}
+
+uint8_t can_device::handle_read_attribute(Message& request, Message& response)
+{
+    if (request.len != 2u) {
+        return CANIOT_EREADATTR;
+    }
+
+    const key_t key = *(key_t*)request.buffer;
+    attr_ref_t attr_ref;
+    uint8_t ret = Attributes::resolve(key, &attr_ref);
+    if (ret == CANIOT_OK)
+    {
+        ret = Attributes::read(&attr_ref, (value_t*)&response.buffer[2]);
+        if (ret == CANIOT_OK) {
+            response.len = 6u;
+            *(key_t*)response.buffer = key; // copy key
+            system.stats.received.read_attribute++;
         }
     }
     return ret;
 }
 
+uint8_t can_device::handle_write_attribute(Message& request, Message& response)
+{
+    if ((request.len < 3) || (request.len > 6)) {
+        return CANIOT_EWRITEATTR;
+    }
+
+    const key_t key = *(key_t*)request.buffer;
+    attr_ref_t attr_ref;
+    uint8_t ret = Attributes::resolve(key, &attr_ref);
+    if (ret == CANIOT_OK) {
+        ret = Attributes::write(&attr_ref, *(value_t*)&request.buffer[2]);
+
+        if (ret == CANIOT_OK) {
+            /* handle special cases */
+            if (key == KEY_ATTR_ABSTIME) {
+                system.uptime_shift = system.uptime;
+#if LOG_LEVEL_DBG
+                usart_printl("update uptime_shift");
+#endif
+            }
+
+            /* TODO : maybe read again is not necessary */
+            ret = Attributes::read(&attr_ref, (value_t*)&response.buffer[2]);
+            if (ret == CANIOT_OK) {
+                response.len = 6u;
+                *(key_t*)response.buffer = key; // copy key
+                system.stats.received.write_attribute++;
+            }
+        }
+    }
+    return ret;
+}
+
+uint8_t can_device::handle_request_telemetry(void)
+{
+    SET_FLAG_TELEMETRY(flags);
+
+    system.stats.received.request_telemetry++;
+
+    return CANIOT_OK;
+}
 
 uint8_t can_device::send_response(Message &response)
 {
@@ -342,12 +328,8 @@ uint8_t can_device::send_response(Message &response)
 
     system.stats.sent.total++;
 
-    return p_can->sendMsgBuf(response.id.value, CAN_STDID, response.len, response.buffer);
-}
-
-void can_device::request_telemetry(void)
-{
-    SET_FLAG_TELEMETRY(flags);
+    return p_can->sendMsgBuf(response.id.value, CAN_STDID,
+        response.len, response.buffer);
 }
 
 const uint8_t can_device::battery(void) const

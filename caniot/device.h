@@ -96,9 +96,8 @@ public:
 
 /*___________________________________________________________________________*/
 
-    void request_telemetry(void);
-
     virtual const uint8_t battery(void) const;
+    
 /*___________________________________________________________________________*/
 
 protected:
@@ -106,6 +105,11 @@ protected:
     uint8_t process_telemetry(void);
 
     uint8_t dispatch_request(Message &request, Message &response);
+
+    uint8_t handle_command(Message &request);
+    uint8_t handle_read_attribute(Message &request, Message &response);
+    uint8_t handle_write_attribute(Message &request, Message &response);
+    uint8_t handle_request_telemetry(void);
 
     void prepare_error(Message &request, const uint8_t errno);
     uint8_t send_response(Message &response);    

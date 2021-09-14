@@ -13,28 +13,34 @@
 
 #define AS(buffer, struct) ((struct*)buffer)
 
-struct contacts_set_t
+union contacts_set_t
 {
-    uint8_t c1: 1;
-    uint8_t c2: 1;
-    uint8_t c3: 1;
-    uint8_t c4: 1;
-    uint8_t c5: 1;
-    uint8_t c6: 1;
-    uint8_t c7: 1;
-    uint8_t c8: 1;
+    struct {
+        uint8_t c1 : 1;
+        uint8_t c2 : 1;
+        uint8_t c3 : 1;
+        uint8_t c4 : 1;
+        uint8_t c5 : 1;
+        uint8_t c6 : 1;
+        uint8_t c7 : 1;
+        uint8_t c8 : 1;
+    };
+    uint8_t value;
 };
 
-struct relays_set_t
+union relays_set_t
 {
-    uint8_t r1: 1;
-    uint8_t r2: 1;
-    uint8_t r3: 1;
-    uint8_t r4: 1;
-    uint8_t r5: 1;
-    uint8_t r6: 1;
-    uint8_t r7: 1;
-    uint8_t r8: 1;
+    struct {
+        uint8_t r1 : 1;
+        uint8_t r2 : 1;
+        uint8_t r3 : 1;
+        uint8_t r4 : 1;
+        uint8_t r5 : 1;
+        uint8_t r6 : 1;
+        uint8_t r7 : 1;
+        uint8_t r8 : 1;
+    };
+    uint8_t value;
 };
 
 typedef int16_t temperature;
@@ -43,28 +49,28 @@ typedef int16_t temperature;
 
 struct CR_t
 {
-    struct contacts_set_t contacts;
-    struct relays_set_t relays;
+    union contacts_set_t contacts;
+    union relays_set_t relays;
 };
 
 struct __attribute__ ((__packed__)) CRA_t
 {
-    struct contacts_set_t contacts;
-    struct relays_set_t relays;
+    union contacts_set_t contacts;
+    union relays_set_t relays;
     uint16_t analog: 10;
 };
 
 struct CRT_t
 {
-    struct contacts_set_t contacts;
-    struct relays_set_t relays;
+    union contacts_set_t contacts;
+    union relays_set_t relays;
     int16_t temperature;
 };
 
 struct __attribute__ ((__packed__)) CRTAAA_t
 {
-    struct contacts_set_t contacts;
-    struct relays_set_t relays;
+    union contacts_set_t contacts;
+    union relays_set_t relays;
     int16_t temperature;
     uint16_t a1: 10;
     uint16_t a2: 10;

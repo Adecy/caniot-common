@@ -3,6 +3,15 @@
 
 /*___________________________________________________________________________*/
 
+static volatile uint8_t ins = 0;
+static volatile bool ins_change = false;
+
+ISR(PCINT2_vect)
+{
+    ins = CustomBoard::read_inputs();
+    ins_change = true;
+}
+
 void CustomBoard::io_init(void)
 {
     /* relays PC2, PC3 */
@@ -16,6 +25,11 @@ void CustomBoard::io_init(void)
     /* disable pull-up */
     PORTD &= ~((1 << PORTD3) | (1 << PORTD4)
         | (1 << PORTD5) | (1 << PORTD6));
+
+    /* enable Pin Change interrupt for inputs */
+    PCMSK2 |= (1 << PCINT19) | (1 << PCINT20) |
+        (1 << PCINT21) | (1 << PCINT22);
+    PCICR |= 1 << PCIE2;
 
     /* initialize i2c and temperature sensor */
     Wire.begin();
@@ -31,6 +45,11 @@ void CustomBoard::initialize(void)
     usart_init();
 
     can_device::initialize();    
+}
+
+uint8_t CustomBoard::read_inputs(void)
+{
+    return (PIND & 0b01111000) >> PIND3;
 }
 
 int16_t CustomBoard::read_temperature(void)
