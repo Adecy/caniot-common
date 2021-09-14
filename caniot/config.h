@@ -14,6 +14,7 @@ typedef struct
 typedef struct
 {
     uint32_t telemetry_period;
+    uint32_t telemetry_rdm_delay;
 
     uint32_t _reserved[9];
 

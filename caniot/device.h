@@ -15,12 +15,7 @@
 #include "config.h"
 #include "types.h"
 #include "scheduler.h"
-
-/*___________________________________________________________________________*/
-
-#define LOOPBACK_IF_ERR 0
-
-#define CANIOT_DRIVER_RETRY_DELAY_MS    1000
+#include "prng.h"
 
 /*___________________________________________________________________________*/
 
@@ -42,17 +37,20 @@ public:
     uint32_t m_speedset;
     uint8_t m_clockset;
 
+    #define FLAG_COMMAND        0
+    #define FLAG_TEMEMETRY      1
+
     #define SET_FLAG(flags, bit) (flags |= 1 << bit)     
-    #define SET_FLAG_COMMAND(flags) SET_FLAG(flags, 0)
-    #define SET_FLAG_TELEMETRY(flags) SET_FLAG(flags, 1)
+    #define SET_FLAG_COMMAND(flags) SET_FLAG(flags, FLAG_COMMAND)
+    #define SET_FLAG_TELEMETRY(flags) SET_FLAG(flags, FLAG_TEMEMETRY)
 
     #define CLEAR_FLAG(flags, bit) (flags &= ~(1 << bit))
-    #define CLEAR_FLAG_COMMAND(flags) CLEAR_FLAG(flags, 0)
-    #define CLEAR_FLAG_TELEMETRY(flags) CLEAR_FLAG(flags, 1)
+    #define CLEAR_FLAG_COMMAND(flags) CLEAR_FLAG(flags, FLAG_COMMAND)
+    #define CLEAR_FLAG_TELEMETRY(flags) CLEAR_FLAG(flags, FLAG_TEMEMETRY)
 
     #define TEST_FLAG(flags, bit) ((flags & (1 << bit)) != 0)
-    #define TEST_FLAG_COMMAND(flags) TEST_FLAG(flags, 0)
-    #define TEST_FLAG_TELEMETRY(flags) TEST_FLAG(flags, 1)
+    #define TEST_FLAG_COMMAND(flags) TEST_FLAG(flags, FLAG_COMMAND)
+    #define TEST_FLAG_TELEMETRY(flags) TEST_FLAG(flags, FLAG_TEMEMETRY)
 
     volatile uint8_t flags;
 
@@ -94,6 +92,8 @@ public:
 
     void print_identification(void);
 
+    static uint8_t request_telemetry(struct event_t *ev);
+
 /*___________________________________________________________________________*/
 
     virtual const uint8_t battery(void) const;
@@ -109,7 +109,7 @@ protected:
     uint8_t handle_command(Message &request);
     uint8_t handle_read_attribute(Message &request, Message &response);
     uint8_t handle_write_attribute(Message &request, Message &response);
-    uint8_t handle_request_telemetry(void);
+    uint8_t handle_request_telemetry(Message &request);
 
     void prepare_error(Message &request, const uint8_t errno);
     uint8_t send_response(Message &response);    

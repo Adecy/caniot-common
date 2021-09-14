@@ -39,7 +39,7 @@ uint8_t scheduler_process(void)
         p_event->scheduled = false;
         if (p_event->handler != nullptr) {
             /* don't alter event related data until the handler is executed */
-            return p_event->handler((void*)p_event);    
+            return p_event->handler(p_event);    
         } else {
             return CANIOT_EENOCB;
         }

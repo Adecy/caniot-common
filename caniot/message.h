@@ -15,9 +15,9 @@ public:
         clear();
     }
 
-    bool is_query(void)
+    bool is_query(void) const
     {
-        return id.bitfields.query == query_t::query;
+        return id.is_query();
     }
 
     inline bool is_broadcast(void) const

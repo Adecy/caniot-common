@@ -83,6 +83,9 @@ void can_device::initialize(void)
     EIMSK |= 1 << INTF0;
 
     timer2_init();
+
+    // initialize prng
+    init_lfsrs();
 }
 
 void can_device::process(void)
@@ -100,9 +103,10 @@ void can_device::process(void)
         system.stats.events.total++;
     }
 
+    /* todo use scheduled event to do periodic telemetry */
     const uint32_t telemetry_period = config.get_telemetry_period();
-    if (telemetry_period && (uptime() -
-        system.last_telemetry >= telemetry_period)) {
+    if (telemetry_period &&
+        (uptime() - system.last_telemetry >= telemetry_period)) {
         SET_FLAG_TELEMETRY(flags);
     }
 
@@ -225,7 +229,7 @@ uint8_t can_device::dispatch_request(Message &request, Message &response)
         break;
 
     case type_t::telemetry:
-        ret = handle_request_telemetry();
+        ret = handle_request_telemetry(request);
         break;
     }
 
@@ -310,12 +314,19 @@ uint8_t can_device::handle_write_attribute(Message& request, Message& response)
     return ret;
 }
 
-uint8_t can_device::handle_request_telemetry(void)
+EVENT_DEFINE(req_telem_event, can_device::request_telemetry);
+
+uint8_t can_device::handle_request_telemetry(Message &request)
 {
-    SET_FLAG_TELEMETRY(flags);
-
+    /* if broadcast telemetry is requested to all devices (broadcast),
+     * the response is randomly delayed for each devices */
+    if (request.is_broadcast() && (config.data->telemetry_rdm_delay != 0)) {
+        uint32_t random_delay = get_random32() % config.data->telemetry_rdm_delay;
+        schedule(req_telem_event, random_delay);
+    } else {
+        SET_FLAG_TELEMETRY(p_instance->flags);
+    }
     system.stats.received.request_telemetry++;
-
     return CANIOT_OK;
 }
 
@@ -329,6 +340,12 @@ uint8_t can_device::send_response(Message &response)
 
     return p_can->sendMsgBuf(response.id.value, CAN_STDID,
         response.len, response.buffer);
+}
+
+uint8_t can_device::request_telemetry(struct event_t *ev)
+{
+    SET_FLAG_TELEMETRY(p_instance->flags);
+    return CANIOT_OK;
 }
 
 const uint8_t can_device::battery(void) const

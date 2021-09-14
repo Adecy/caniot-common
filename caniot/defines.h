@@ -145,6 +145,11 @@ typedef union
         return (bitfields.query == query_t::response && bitfields.type == type_t::command);
     }
 
+    bool is_query(void) const
+    {
+        return bitfields.query == query_t::query;
+    }
+
 } can_id_t;
 #pragma pack(1)
 
@@ -216,6 +221,10 @@ typedef union
 #define DEFAULT_TELEMETRY_PERIOD    10*60
 
 #define MAINS_POWER_SUPPLY          0xFF
+
+#define LOOPBACK_IF_ERR 0
+
+#define CANIOT_DRIVER_RETRY_DELAY_MS    1000
 
 /*___________________________________________________________________________*/
 
