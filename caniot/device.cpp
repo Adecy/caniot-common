@@ -107,7 +107,7 @@ void can_device::process(void)
     const uint32_t telemetry_period = config.get_telemetry_period();
     if (telemetry_period &&
         (uptime() - system.last_telemetry >= telemetry_period)) {
-        SET_FLAG_TELEMETRY(flags);
+        request_telemetry();
     }
 
     if (TEST_FLAG_COMMAND(flags)) {
@@ -253,7 +253,7 @@ uint8_t can_device::handle_command(Message &request)
     /* call handler and request telemetry response if success */
     uint8_t ret = m_command_handler(request.buffer, request.len);
     if (ret == CANIOT_OK) {
-        SET_FLAG_TELEMETRY(flags);
+        request_telemetry();
         system.stats.received.command++;
     }
 
@@ -324,7 +324,7 @@ uint8_t can_device::handle_request_telemetry(Message &request)
         uint32_t random_delay = get_random32() % config.data->telemetry_rdm_delay;
         schedule(req_telem_event, random_delay);
     } else {
-        SET_FLAG_TELEMETRY(p_instance->flags);
+        request_telemetry();
     }
     system.stats.received.request_telemetry++;
     return CANIOT_OK;

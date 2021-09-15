@@ -38,6 +38,8 @@
     static const char name[] PROGMEM = string;  \
     usart_print_p(name);
 
+#define SEC_TO_MS(sec)          (sec*1000u)
+
 /*___________________________________________________________________________*/
 
 #define FRAME_COMMAND           0b00

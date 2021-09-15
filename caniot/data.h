@@ -84,7 +84,8 @@ struct TTTT_t
 
 /*___________________________________________________________________________*/
 
-#define CANIOT_SET_LEN(len , type) (len = get_data_type_size(data_type_t::type))
+#define CANIOT_GET_LEN(type) (get_data_type_size(data_type_t::type))
+#define CANIOT_SET_LEN(len, type) (len = get_data_type_size(data_type_t::type))
 
 /*___________________________________________________________________________*/
 

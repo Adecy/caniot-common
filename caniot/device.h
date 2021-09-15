@@ -92,7 +92,7 @@ public:
 
     void print_identification(void);
 
-    static uint8_t request_telemetry(struct event_t *ev);
+    static uint8_t request_telemetry(struct event_t *ev = nullptr);
 
 /*___________________________________________________________________________*/
 

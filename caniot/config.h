@@ -13,10 +13,11 @@ typedef struct
 
 typedef struct
 {
-    uint32_t telemetry_period;
-    uint32_t telemetry_rdm_delay;
+    uint32_t telemetry_period;      // sec
+    uint32_t telemetry_rdm_delay;   // ms
+    uint32_t telemetry_min;         // ms
 
-    uint32_t _reserved[9];
+    uint32_t _reserved[7];
 
     switching_point_t schedule[5];
 } config_t; 

@@ -1,6 +1,7 @@
 #include "timer2.h"
-#include "scheduler.h"
 #include "tqueue.h"
+
+extern struct titem* events_queue;
 
 volatile uint32_t timer2_counter = 0;
 

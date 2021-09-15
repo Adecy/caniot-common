@@ -130,6 +130,7 @@ protected:
     static constexpr const struct attribute_t config_attr[] PROGMEM = {
         ATTRIBUTE(config_t, WRITABLE, "telemetry_period", telemetry_period),
         ATTRIBUTE(config_t, WRITABLE, "telemetry_rdm_delay", telemetry_rdm_delay),
+        ATTRIBUTE(config_t, WRITABLE, "telemetry_min", telemetry_min),
     };
 
     static constexpr const struct section_t attr_sections[] PROGMEM = {

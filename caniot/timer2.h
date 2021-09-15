@@ -10,6 +10,7 @@
 extern "C" {
 #endif
 
+/* 100Hz frequency = 10ms period */
 #define TIMER2_PERIOD   10
 
 typedef uint32_t time_cs_t;
