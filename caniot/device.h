@@ -111,6 +111,7 @@ protected:
     uint8_t handle_write_attribute(Message &request, Message &response);
     uint8_t handle_request_telemetry(Message &request);
 
+    void prepare_response(Message& response);
     void prepare_error(Message &request, const uint8_t errno);
     uint8_t send_response(Message &response);    
 };

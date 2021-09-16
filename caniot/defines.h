@@ -7,6 +7,15 @@
 
 /*___________________________________________________________________________*/
 
+#ifdef CONFIG_CANIOT_MULTI_ENDPOINTS
+#define CANIOT_MULTI_ENDPOINTS  1
+#else
+#define CANIOT_MULTI_ENDPOINTS  0
+#endif
+
+
+/*___________________________________________________________________________*/
+
 #ifndef LOG_LEVEL
 #define LOG_LEVEL           3
 #endif

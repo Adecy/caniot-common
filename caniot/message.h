@@ -3,6 +3,8 @@
 
 #include "defines.h"
 
+class can_device;
+
 class Message
 {
 public:
@@ -35,27 +37,13 @@ public:
         return (data_type_t)id.bitfields.device_type;
     }
 
-    void set_errno(uint8_t errno)
-    {
-        len = 1u;
-        buffer[0] = errno;
+    void set_errno(uint8_t errno);
 
-        id.bitfields.query = query_t::response;
-        id.bitfields.type = type_t::command;
-    }
+    bool need_response(void) const;
 
-    bool need_response(void) const
-    {
-        return ((id.value & 0b111) != (FRAME_COMMAND | FRAME_QUERY << 2)) &&
-            ((id.value & 0b111) != (FRAME_TELEMETRY | FRAME_QUERY << 2));
-    }
+    void clear(void);
 
-    void clear(void) 
-    {
-        len = 0;
-        memset(&id, 0x00, sizeof(can_id_t));
-        memset(buffer, 0x00, sizeof(buffer));
-    }
+    void prepare_response(Message& response, can_device& dev);
 };
 
 #endif

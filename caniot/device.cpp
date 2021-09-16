@@ -186,7 +186,7 @@ uint8_t can_device::process_telemetry(void)
         /* length must at least contain the data_type,
          * it may contain more information
          */
-        if (response.len >= get_data_type_size((data_type_t)__DEVICE_TYPE__)) {
+        if (response.len >= get_data_type_size((data_type_t)identification.device.type)) {
 
             /* prepare response */
             system.stats.sent.telemetry++;
@@ -194,8 +194,8 @@ uint8_t can_device::process_telemetry(void)
                 type_t::telemetry,
                 query_t::response,
                 controller_t::broadcast,
-                __DEVICE_TYPE__,
-                __DEVICE_ID__);
+                identification.device.type,
+                identification.device.id);
 
             err = send_response(response);
         } else {
@@ -211,8 +211,7 @@ uint8_t can_device::dispatch_request(Message &request, Message &response)
         return CANIOT_ENPROC;
     }
 
-    response.clear();
-    response.id.bitfields.query = query_t::response;
+    request.prepare_response(response, *this);
 
     uint8_t ret = CANIOT_ENPROC;
     switch (request.get_type()) {
@@ -241,7 +240,7 @@ uint8_t can_device::handle_command(Message &request)
     /* check command data type
      * TODO : remove because unecessary
      */
-    if (request.get_data_type() != (data_type_t)__DEVICE_TYPE__) {
+    if (request.get_data_type() != (data_type_t)identification.device.type) {
         return CANIOT_ECMD;
     }
 
