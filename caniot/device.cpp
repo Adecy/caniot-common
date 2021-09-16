@@ -315,13 +315,29 @@ uint8_t can_device::handle_write_attribute(Message& request, Message& response)
 
 EVENT_DEFINE(req_telem_event, can_device::request_telemetry);
 
+uint8_t can_device::schedule_random_telemetry(void)
+{
+    if (config.data->telemetry_rdm_delay != 0) {
+        uint32_t random_delay = get_random32() % config.data->telemetry_rdm_delay;
+        schedule(req_telem_event, random_delay);
+
+#if LOG_LEVEL_DBG
+        PRINT_PROGMEM_STRING(rdm_telem_str, "Scheduled random telemetry : ");
+        usart_u16(random_delay);
+        usart_transmit('\n');
+#endif
+    } else {
+        request_telemetry();
+    }
+    return CANIOT_OK;
+}
+
 uint8_t can_device::handle_request_telemetry(Message &request)
 {
     /* if broadcast telemetry is requested to all devices (broadcast),
      * the response is randomly delayed for each devices */
-    if (request.is_broadcast() && (config.data->telemetry_rdm_delay != 0)) {
-        uint32_t random_delay = get_random32() % config.data->telemetry_rdm_delay;
-        schedule(req_telem_event, random_delay);
+    if (request.is_broadcast()) {
+        schedule_random_telemetry();
     } else {
         request_telemetry();
     }
@@ -371,6 +387,7 @@ void can_device::print_identification(void)
 
     PRINT_PROGMEM_STRING(version_str, "\nversion = ");
     usart_u16(identification.version);
+    usart_transmit('\n');
     usart_transmit('\n');
 }
 

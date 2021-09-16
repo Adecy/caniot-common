@@ -92,6 +92,7 @@ public:
 
     void print_identification(void);
 
+    uint8_t schedule_random_telemetry(void);
     static uint8_t request_telemetry(struct event_t *ev = nullptr);
 
 /*___________________________________________________________________________*/
