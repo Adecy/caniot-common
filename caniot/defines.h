@@ -9,6 +9,8 @@
 
 #ifdef CONFIG_CANIOT_MULTI_ENDPOINTS
 #define CANIOT_MULTI_ENDPOINTS  1
+#error unsupported
+
 #else
 #define CANIOT_MULTI_ENDPOINTS  0
 #endif
@@ -173,10 +175,13 @@ typedef union
 
 #define DEVICE_ID_MODE  CAN_STDID
 
+#if CANIOT_MULTI_ENDPOINTS
+/* we listen on any device */
+#define DEVICE_RXM0     0b00000000100
+#else
 #define DEVICE_RXM0     0b11111100100
-// #define DEVICE_RXF0     0x300
-// #define DEVICE_RXF1     0x300
-// #define DEVICE_RXF0     0 | (0b111111 << 5)
+#endif
+
 #define DEVICE_RXF0     (FRAME_QUERY << 2) | (__DEVICE_TYPE__ << 5) | (__DEVICE_ID__ << 8)
 #define DEVICE_RXF1     DEVICE_RXF0
 
