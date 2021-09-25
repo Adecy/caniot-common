@@ -32,7 +32,7 @@ static const char caniot_msg_data_frame_types[] PROGMEM = {
     "CRA\0"
     "CRT\0"
     "CRTTA\0"
-    "CRTRAAA\0"
+    "CRTAAA\0"
     "TTTT\0"
     ".\0"
     "\0"
